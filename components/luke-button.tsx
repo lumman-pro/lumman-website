@@ -7,8 +7,9 @@ import { Loader2 } from "lucide-react"
 
 export function LukeButton() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const [conversationState, setConversationState] = useState<"idle" | "connecting" | "connected">("idle")
-  const conversationRef = useRef<ReturnType<typeof useConversation> | null>(null)
+  const [conversationState, setConversationState] = useState<"idle" | "connecting" | "connected" | "error">("idle")
+  const conversationRef = useRef(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Initialize the conversation hook
   const conversation = useConversation({
@@ -25,7 +26,8 @@ export function LukeButton() {
     },
     onError: (err) => {
       console.error("Conversation error:", err)
-      setConversationState("idle")
+      setErrorMessage(err?.message || "Connection error")
+      setConversationState("error")
     },
   })
 
@@ -44,6 +46,13 @@ export function LukeButton() {
   }, [])
 
   const handleButtonClick = async () => {
+    if (conversationState === "error") {
+      // Reset error state and try again
+      setConversationState("idle")
+      setErrorMessage(null)
+      return
+    }
+
     if (conversationState === "idle") {
       setConversationState("connecting")
 
@@ -67,18 +76,24 @@ export function LukeButton() {
             const { url } = await response.json()
             await conversation.startSession({ url })
           } catch (urlError) {
-            console.warn("Failed to get signed URL, using fallback:", urlError)
-            await conversation.startSession({ agentId: "fallback-agent-id" })
+            console.error("Failed to get signed URL:", urlError)
+            setErrorMessage("Failed to get signed URL")
+            setConversationState("error")
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to initialize conversation:", err)
-        setConversationState("idle")
+        setErrorMessage(err?.message || "Failed to initialize conversation")
+        setConversationState("error")
       }
     } else if (conversationState === "connected") {
       // If already connected, end the session
-      await conversation.endSession()
-      setConversationState("idle")
+      try {
+        await conversation.endSession()
+      } catch (err) {
+        console.error("Error ending session:", err)
+        setConversationState("idle") // Still set to idle even if there's an error ending
+      }
     }
   }
 
@@ -86,10 +101,28 @@ export function LukeButton() {
   useEffect(() => {
     return () => {
       if (conversationRef.current && conversationState === "connected") {
-        conversationRef.current.endSession()
+        try {
+          // @ts-ignore - we know this exists
+          conversationRef.current.endSession()
+        } catch (err) {
+          console.error("Error ending session during cleanup:", err)
+        }
       }
     }
   }, [conversationState])
+
+  // Get button text based on state
+  const getButtonText = () => {
+    if (conversationState === "connecting") {
+      return <Loader2 className="h-4 w-4 animate-spin" />
+    } else if (conversationState === "connected") {
+      return conversation.isSpeaking ? "Speaking..." : "Listening..."
+    } else if (conversationState === "error") {
+      return "Try later"
+    } else {
+      return "talk to Luke"
+    }
+  }
 
   return (
     <button
@@ -99,6 +132,7 @@ export function LukeButton() {
         "shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out",
         "group isolate w-[120px] h-[42px] flex items-center justify-center", // Fixed width and height for consistency
         conversationState === "connecting" && "cursor-wait",
+        conversationState === "error" && "opacity-70",
       )}
       style={{
         WebkitBackdropFilter: "blur(8px)",
@@ -106,26 +140,24 @@ export function LukeButton() {
       }}
       onClick={handleButtonClick}
       disabled={conversationState === "connecting"}
+      title={errorMessage || undefined}
     >
-      <span className="relative z-10 flex items-center justify-center whitespace-nowrap">
-        {conversationState === "connecting" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : conversationState === "connected" ? (
-          "All good now"
-        ) : (
-          "talk to Luke"
-        )}
-      </span>
+      <span className="relative z-10 flex items-center justify-center whitespace-nowrap">{getButtonText()}</span>
       <div
         className={cn(
           "absolute inset-0 -z-10 bg-gradient-to-br opacity-90 dark:opacity-100",
           conversationState === "connected"
             ? "from-blue-600 via-purple-600 to-pink-500" // deep emerald, viridian, midnight teal
-            : "from-cyan-500 via-blue-700 to-emerald-400",
+            : conversationState === "error"
+              ? "from-gray-500 via-gray-600 to-gray-700"
+              : "from-cyan-500 via-blue-700 to-emerald-400",
         )}
         style={{
           backgroundSize: "200% 200%",
-          animation: `gradient-shift ${conversationState === "connected" ? "5s" : "8s"} ease infinite`,
+          animation:
+            conversationState !== "error"
+              ? `gradient-shift ${conversationState === "connected" ? "5s" : "8s"} ease infinite`
+              : "none",
         }}
       />
       <div
@@ -133,10 +165,12 @@ export function LukeButton() {
           "absolute inset-0 -z-10",
           conversationState === "connected"
             ? "bg-[radial-gradient(circle_at_50%_50%,rgba(6,78,59,0.8),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_50%,rgba(6,78,59,0.5),transparent_60%)]"
-            : "bg-[radial-gradient(circle_at_50%_50%,rgba(22,219,192,0.8),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_50%,rgba(22,219,192,0.5),transparent_60%)]",
+            : conversationState === "error"
+              ? "bg-[radial-gradient(circle_at_50%_50%,rgba(75,75,75,0.8),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_50%,rgba(75,75,75,0.5),transparent_60%)]"
+              : "bg-[radial-gradient(circle_at_50%_50%,rgba(22,219,192,0.8),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_50%,rgba(22,219,192,0.5),transparent_60%)]",
         )}
         style={{
-          animation: "pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+          animation: conversationState !== "error" ? "pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite" : "none",
         }}
       />
       <div
@@ -144,11 +178,13 @@ export function LukeButton() {
           "absolute inset-0 -z-10 opacity-70 dark:opacity-50",
           conversationState === "connected"
             ? "bg-[radial-gradient(circle_at_50%_50%,rgba(13,148,136,0.8),transparent_40%)]"
-            : "bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.8),transparent_40%)]",
+            : conversationState === "error"
+              ? "bg-[radial-gradient(circle_at_50%_50%,rgba(75,75,75,0.8),transparent_40%)]"
+              : "bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.8),transparent_40%)]",
         )}
         style={{
-          left: `calc(${mousePosition.x}px - 50%)`,
-          top: `calc(${mousePosition.y}px - 50%)`,
+          left: conversationState !== "error" ? `calc(${mousePosition.x}px - 50%)` : "50%",
+          top: conversationState !== "error" ? `calc(${mousePosition.y}px - 50%)` : "50%",
           width: "100%",
           height: "100%",
           transform: "translate(-50%, -50%)",
