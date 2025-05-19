@@ -70,14 +70,28 @@ export function LukeButton() {
           try {
             // For private agents, fetch a signed URL
             const response = await fetch("/api/elevenlabs/get-signed-url")
+
+            // Check if response is ok
             if (!response.ok) {
-              throw new Error("Failed to get signed URL")
+              throw new Error("Failed to get signed URL: " + response.status)
             }
-            const { url } = await response.json()
-            await conversation.startSession({ url })
+
+            // Make sure response is a valid Response object before calling json()
+            if (response && typeof response.json === "function") {
+              const data = await response.json()
+
+              // Check if data contains url property
+              if (data && data.url) {
+                await conversation.startSession({ url: data.url })
+              } else {
+                throw new Error("Invalid response format: missing URL")
+              }
+            } else {
+              throw new Error("Invalid response format: json method not available")
+            }
           } catch (urlError) {
             console.error("Failed to get signed URL:", urlError)
-            setErrorMessage("Failed to get signed URL")
+            setErrorMessage(urlError instanceof Error ? urlError.message : "Failed to get signed URL")
             setConversationState("error")
           }
         }

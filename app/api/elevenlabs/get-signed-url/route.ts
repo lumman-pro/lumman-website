@@ -34,8 +34,16 @@ export async function GET() {
       return NextResponse.json({ error: "Failed to get signed URL from ElevenLabs" }, { status: response.status })
     }
 
-    const data = await response.json()
-    return NextResponse.json({ url: data.signed_url })
+    try {
+      const data = await response.json()
+      if (!data || !data.signed_url) {
+        return NextResponse.json({ error: "Invalid response from ElevenLabs API" }, { status: 500 })
+      }
+      return NextResponse.json({ url: data.signed_url })
+    } catch (jsonError) {
+      console.error("Error parsing JSON from ElevenLabs API:", jsonError)
+      return NextResponse.json({ error: "Failed to parse response from ElevenLabs API" }, { status: 500 })
+    }
   } catch (error) {
     console.error("Error getting signed URL:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
