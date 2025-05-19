@@ -9,19 +9,20 @@ export default function Home() {
       <Header />
       <main className="flex-1 transition-colors duration-300 ease-in-out">
         <div className="container max-w-3xl py-12 md:py-24">
-          <div className="space-y-32">
-            <section className="space-y-4">
+          <div className="flex flex-col">
+            <section className="space-y-4 mb-32">
               <h1 className="text-4xl font-bold tracking-tighter md:text-5xl leading-loose text-foreground transition-colors duration-300 ease-in-out">
                 <div>from signal to system.</div>
                 <div>
                   cognition. in motion<span className="blinking-dot">.</span>
                 </div>
               </h1>
-              <h2 className="text-muted-foreground text-base font-medium transition-colors duration-300 ease-in-out">
+              <h2 className="text-foreground text-lg font-medium transition-colors duration-300 ease-in-out">
                 AI solutions & ops R&D Lab
               </h2>
             </section>
-            <section className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-center my-16">
+
+            <section className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-center mb-64">
               <p className="text-sl text-muted-foreground leading-relaxed max-w-md transition-colors duration-300 ease-in-out">
                 Luke is an autonomous AI trained on real business cases. He listens, evaluates, and offers strategic
                 answers, including timeframes and cost ranges. Available anytime.
@@ -30,50 +31,58 @@ export default function Home() {
                 <LukeButton />
               </div>
             </section>
-            <section className="space-y-12 text-right">
+
+            <div className="mb-4">
+              <h3 className="text-lg font-medium tracking-tight text-left text-foreground transition-colors duration-300 ease-in-out">
+                OUR FOCUS
+              </h3>
+            </div>
+
+            <section className="space-y-12 text-right mb-32">
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-medium tracking-tight text-left text-foreground transition-colors duration-300 ease-in-out">
-                    PRACTICAL AI
-                  </h3>
+                  <div></div> {/* Empty div to maintain the flex layout */}
                   <h3 className="text-2xl font-medium tracking-tight text-foreground transition-colors duration-300 ease-in-out">
-                    AUTOMATION BEYOND CODE
+                    AI AGENTS & AUTOMATIONS
                   </h3>
                 </div>
                 <div className="text-muted-foreground space-y-4 leading-relaxed max-w-lg ml-auto">
                   <p className="transition-colors duration-300 ease-in-out">
-                    Most automation stops at what can be wrapped in a tool, workflow, or template.
-                  </p>
-                  <p className="transition-colors duration-300 ease-in-out">
-                    Lumman goes deeper, into processes that are fragmented, manual, or too context-specific for
-                    off-the-shelf solutions.
-                  </p>
-                  <p className="transition-colors duration-300 ease-in-out">
-                    The result isn't a product. It's an operational asset: invisible, custom-fit, and deployed in weeks,
-                    not quarters.
+                    We build AI systems that operate behind screens — and where there are no screens at all. From
+                    fragmented digital workflows to entirely human-run routines, Lumman automates what drains time,
+                    focus, and resources. Each system is custom-fit, quiet, and built to work in real operational
+                    conditions. Fast.
                   </p>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <h3 className="text-2xl font-medium tracking-tight text-foreground transition-colors duration-300 ease-in-out">
-                  BOARDROOM CLARITY
+                  ADVISORY
                 </h3>
                 <div className="text-muted-foreground space-y-4 leading-relaxed max-w-lg ml-auto">
                   <p className="transition-colors duration-300 ease-in-out">
-                    AI strategy isn't about trends. It's about leverage.
-                  </p>
-                  <p className="transition-colors duration-300 ease-in-out">
-                    Lumman works directly with founders and leadership teams to identify where intelligence systems can
-                    replace noise, not just add features.
-                  </p>
-                  <p className="transition-colors duration-300 ease-in-out">
-                    Advisory outcomes are specific, tactical, and immediate, designed to unlock value without disrupting
-                    what already works.
+                    We help founders and leadership teams make sense of AI — where it fits, what it's for, and how to
+                    start. From exploring use cases to shaping first steps, our work is focused, practical, and grounded
+                    in the needs of the business.
                   </p>
                 </div>
               </div>
+
+              {/* <div className="space-y-6">
+                <h3 className="text-2xl font-medium tracking-tight text-foreground transition-colors duration-300 ease-in-out">
+                  OWN PROJECTS
+                </h3>
+                <div className="text-muted-foreground space-y-4 leading-relaxed max-w-lg ml-auto">
+                  <p className="transition-colors duration-300 ease-in-out">
+                    Alongside our client work, we build products of our own — ideas we want to exist and are ready to
+                    stand behind. From real-world pain points to working software, each product is shaped by what we
+                    know, need, and use.
+                  </p>
+                </div>
+              </div> */}
             </section>
+
             <FaqSection />
           </div>
         </div>

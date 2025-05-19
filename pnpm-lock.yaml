@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@11labs/react':
-        specifier: ^0.1.4
-        version: 0.1.4(react@19.0.0)
       '@ai-sdk/openai':
         specifier: latest
         version: 1.3.22(zod@3.24.1)
@@ -100,10 +97,10 @@ importers:
         version: 1.1.6(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@supabase/ssr':
         specifier: latest
-        version: 0.6.1(@supabase/supabase-js@2.49.4)
+        version: 0.6.1(@supabase/supabase-js@2.49.5)
       '@supabase/supabase-js':
         specifier: latest
-        version: 2.49.4
+        version: 2.49.5
       '@tailwindcss/typography':
         specifier: latest
         version: 0.5.16(tailwindcss@3.4.17)
@@ -209,14 +206,6 @@ importers:
         version: 5.0.2
 
 packages:
-
-  '@11labs/client@0.1.4':
-    resolution: {integrity: sha512-XxNl4GpNW9NYOD1P5apzZBpcNOP0Zu4goZu8Lud1iTIVkjv3fDp+hyurZoSTUdsik/TIeuxMgbd392M/EQgoKw==}
-
-  '@11labs/react@0.1.4':
-    resolution: {integrity: sha512-iJ+cRfoj6WNQ9U48Umvhf4yw+LhmLYtkPXiU85Nj74paPQbSNBDTq6kwi7BTu2DtfgqP65T5BEjWhheV2IxogA==}
-    peerDependencies:
-      react: '>=16.8.0'
 
   '@ai-sdk/openai@1.3.22':
     resolution: {integrity: sha512-QwA+2EkG0QyjVR+7h6FE7iOu2ivNqAVMm9UJZkVxxTk5OIq5fFJDTEI/zICEMuHImTTXR2JjsL6EirJ28Jc4cw==}
@@ -1237,8 +1226,8 @@ packages:
   '@supabase/storage-js@2.7.1':
     resolution: {integrity: sha512-asYHcyDR1fKqrMpytAS1zjyEfvxuOIp1CIXX7ji4lHHcJKqyk+sLl/Vxgm4sN6u8zvuUtae9e4kDxQP2qrwWBA==}
 
-  '@supabase/supabase-js@2.49.4':
-    resolution: {integrity: sha512-jUF0uRUmS8BKt37t01qaZ88H9yV1mbGYnqLeuFWLcdV+x1P4fl0yP9DGtaEhFPZcwSom7u16GkLEH9QJZOqOkw==}
+  '@supabase/supabase-js@2.49.5':
+    resolution: {integrity: sha512-LfsQLK1WVDzkYQvS3rmaLDPpZdN75GPYxPJd7uJOS8jrV2Kchk5qzvhvmofRPb6esQhw+YYfAYDInURtPUupLQ==}
 
   '@swc/counter@0.1.3':
     resolution: {integrity: sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ==}
@@ -2607,13 +2596,6 @@ packages:
 
 snapshots:
 
-  '@11labs/client@0.1.4': {}
-
-  '@11labs/react@0.1.4(react@19.0.0)':
-    dependencies:
-      '@11labs/client': 0.1.4
-      react: 19.0.0
-
   '@ai-sdk/openai@1.3.22(zod@3.24.1)':
     dependencies:
       '@ai-sdk/provider': 1.1.3
@@ -3607,16 +3589,16 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@supabase/ssr@0.6.1(@supabase/supabase-js@2.49.4)':
+  '@supabase/ssr@0.6.1(@supabase/supabase-js@2.49.5)':
     dependencies:
-      '@supabase/supabase-js': 2.49.4
+      '@supabase/supabase-js': 2.49.5
       cookie: 1.0.2
 
   '@supabase/storage-js@2.7.1':
     dependencies:
       '@supabase/node-fetch': 2.6.15
 
-  '@supabase/supabase-js@2.49.4':
+  '@supabase/supabase-js@2.49.5':
     dependencies:
       '@supabase/auth-js': 2.69.1
       '@supabase/functions-js': 2.4.4
