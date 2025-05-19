@@ -19,12 +19,15 @@ export default async function InsightsPage({
   const currentPage = searchParams.page ? Number.parseInt(searchParams.page) : 1
   const offset = (currentPage - 1) * POSTS_PER_PAGE
 
-  const { posts, count } = await getPosts({
-    limit: POSTS_PER_PAGE,
-    offset,
-  })
+  // Fetch data in parallel
+  const [{ posts, count }, categories] = await Promise.all([
+    getPosts({
+      limit: POSTS_PER_PAGE,
+      offset,
+    }),
+    getCategories(),
+  ])
 
-  const categories = await getCategories()
   const totalPages = Math.ceil(count / POSTS_PER_PAGE)
 
   return (

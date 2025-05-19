@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@11labs/react": "0.1.4",
     "@ai-sdk/openai": "latest",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "latest",

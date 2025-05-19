@@ -37,18 +37,21 @@ export default async function CategoryPage({
   const currentPage = searchParams.page ? Number.parseInt(searchParams.page) : 1
   const offset = (currentPage - 1) * POSTS_PER_PAGE
 
-  const categories = await getCategories()
+  // Fetch data in parallel
+  const [categories, { posts, count }] = await Promise.all([
+    getCategories(),
+    getPosts({
+      limit: POSTS_PER_PAGE,
+      offset,
+      categorySlug: params.slug,
+    }),
+  ])
+
   const category = categories.find((c) => c.slug === params.slug)
 
   if (!category) {
     notFound()
   }
-
-  const { posts, count } = await getPosts({
-    limit: POSTS_PER_PAGE,
-    offset,
-    categorySlug: params.slug,
-  })
 
   const totalPages = Math.ceil(count / POSTS_PER_PAGE)
 

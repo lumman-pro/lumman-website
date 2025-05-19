@@ -43,8 +43,8 @@ export function Header() {
               <Link
                 href="/insights"
                 className={cn(
-                  "text-sm transition-colors duration-300 ease-in-out",
-                  isActive("/insights") ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground",
+                  "text-sm transition-colors duration-300 ease-in-out font-medium",
+                  isActive("/insights") ? "text-foreground" : "text-foreground/80 hover:text-foreground",
                 )}
               >
                 Insights
