@@ -1,4 +1,0 @@
-{
-  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm run build",
-  "installCommand": "echo 'node-linker=hoisted' > .npmrc && echo 'public-hoist-pattern[]=*' >> .npmrc && echo 'shamefully-hoist=true' >> .npmrc && pnpm install"
-}
