@@ -8,31 +8,30 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-background transition-colors duration-300 ease-in-out">
       <Header />
       <main className="flex-1 transition-colors duration-300 ease-in-out">
-        <div className="container max-w-3xl py-12 md:py-24">
+        <div className="container max-w-3xl pt-12 pb-12 md:pt-24 md:pb-24">
           <div className="flex flex-col">
-            <section className="space-y-4 mb-32">
-              <h1 className="text-4xl font-bold tracking-tighter md:text-5xl leading-loose text-foreground transition-colors duration-300 ease-in-out">
-                <div>from signal to system.</div>
-                <div>
+            <section className="mb-32">
+              <h1 className="text-4xl font-bold tracking-tighter md:text-5xl text-foreground transition-colors duration-300 ease-in-out">
+                <div className="whitespace-nowrap">from signal to system.</div>
+                <div className="mt-2 md:mt-2">
                   cognition. in motion<span className="blinking-dot">.</span>
                 </div>
               </h1>
-              <h2 className="text-foreground text-lg font-medium transition-colors duration-300 ease-in-out">
+              <h2 className="text-foreground text-lg font-medium mt-4 transition-colors duration-300 ease-in-out">
                 AI solutions & ops R&D Lab
               </h2>
             </section>
 
-            <section className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-center mb-64">
+            <section className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-center mb-48">
               <p className="text-sl text-muted-foreground leading-relaxed max-w-md transition-colors duration-300 ease-in-out">
-                Luke is an autonomous AI trained on real business cases. He listens, evaluates, and offers strategic
-                answers, including timeframes and cost ranges. Available anytime.
+                Luke is an autonomous AI trained on real business cases. He’s here to listen, spot what’s holding you back, and share ideas from the field. 24/7
               </p>
               <div className="inline-block">
                 <LukeButton />
               </div>
             </section>
 
-            <div className="mb-4">
+            <div className="mb-10 mt-[-3rem]">
               <h3 className="text-lg font-medium tracking-tight text-left text-foreground transition-colors duration-300 ease-in-out">
                 OUR FOCUS
               </h3>

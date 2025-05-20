@@ -2,16 +2,44 @@
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { signOut, supabaseClient } from "@/lib/supabase/auth"
+import { LogOut, User } from "lucide-react"
 
 export function Header() {
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
+
+    // Check if user is logged in
+    const checkUser = async () => {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession()
+      setUser(session?.user || null)
+      setIsLoading(false)
+    }
+
+    checkUser()
+
+    // Set up auth state listener
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   // Use absolute URLs to ensure the images are found
@@ -21,9 +49,14 @@ export function Header() {
     return pathname === path || pathname.startsWith(`${path}/`)
   }
 
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur transition-colors duration-300 ease-in-out">
-      <div className="container max-w-3xl flex h-16 items-center justify-between">
+      <div className="container max-w-7xl flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
           {logoSrc ? (
             <img
@@ -37,7 +70,7 @@ export function Header() {
             <div className="w-[120px] h-[24px]" />
           )}
         </Link>
-        <nav>
+        <nav className="flex items-center space-x-6">
           <ul className="flex space-x-6">
             <li>
               <Link
@@ -50,7 +83,40 @@ export function Header() {
                 Insights
               </Link>
             </li>
+            {user && (
+              <li>
+                <Link
+                  href="/dashboard"
+                  className={cn(
+                    "text-sm transition-colors duration-300 ease-in-out font-medium",
+                    isActive("/dashboard") ? "text-foreground" : "text-foreground/80 hover:text-foreground",
+                  )}
+                >
+                  Dashboard
+                </Link>
+              </li>
+            )}
           </ul>
+
+          {user && !isLoading && (
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign out
+            </Button>
+          )}
+
+          {!user && !isLoading && (
+            <Link href="/login">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-sm bg-transparent border-none transition-colors duration-300 ease-in-out"
+              >
+                <User className="h-4 w-4 text-foreground transition-colors duration-300 ease-in-out" />
+                <span className="sr-only">Sign in</span>
+              </Button>
+            </Link>
+          )}
         </nav>
       </div>
     </header>

@@ -101,6 +101,38 @@ export interface Database {
           category_id?: string
         }
       }
+      chats: {
+        Row: {
+          id: string
+          user_id: string
+          created_at: string
+          chat_duration: number | null
+          chat_name: string | null
+          chat_summary: string | null
+          chat_transcription: string | null
+          deleted: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          created_at?: string
+          chat_duration?: number | null
+          chat_name?: string | null
+          chat_summary?: string | null
+          chat_transcription?: string | null
+          deleted?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          created_at?: string
+          chat_duration?: number | null
+          chat_name?: string | null
+          chat_summary?: string | null
+          chat_transcription?: string | null
+          deleted?: boolean
+        }
+      }
     }
     Views: {
       // Add your views here
