@@ -1,38 +1,40 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
-import { useChat } from "ai/react"
+import { useEffect, useState, useRef } from "react"
+import { useConversation } from "@/lib/elevenlabs"
 import { Loader2 } from "lucide-react"
 
 export function LukeButton() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [conversationState, setConversationState] = useState<"idle" | "connecting" | "connected" | "error">("idle")
+  const conversationRef = useRef(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isSpeaking, setIsSpeaking] = useState(false)
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
-    api: "/api/elevenlabs/agent",
-    onResponse: async (response) => {
-      // When we get a response, we're connected and the agent is speaking
+  // Initialize the conversation hook
+  const conversation = useConversation({
+    onConnect: () => {
       setConversationState("connected")
-      setIsSpeaking(true)
       console.log("Connected to Luke")
     },
-    onFinish: async (message) => {
-      // When finished, we're still connected but not speaking
-      setIsSpeaking(false)
+    onDisconnect: () => {
+      setConversationState("idle")
+      console.log("Disconnected from Luke")
+    },
+    onMessage: (message) => {
+      console.log("Received message:", message)
+    },
+    onError: (err) => {
+      console.error("Conversation error:", err)
+      setErrorMessage(err?.message || "Connection error")
+      setConversationState("error")
     },
   })
 
-  // Update error state when there's an error from useChat
+  // Store the conversation reference
   useEffect(() => {
-    if (error) {
-      setErrorMessage(error.message || "Connection error")
-      setConversationState("error")
-      console.error("Conversation error:", error)
-    }
-  }, [error])
+    conversationRef.current = conversation
+  }, [conversation])
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -58,11 +60,41 @@ export function LukeButton() {
         // Request microphone access
         await navigator.mediaDevices.getUserMedia({ audio: true })
 
-        // Correct way to submit a message with useChat hook
-        handleInputChange({ target: { value: "Hello, I need some assistance." } } as any)
-        setTimeout(() => {
-          handleSubmit({ preventDefault: () => {} } as any)
-        }, 100)
+        // Start the conversation session
+        const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID
+        const isPublic = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_PUBLIC === "true"
+
+        if (isPublic && agentId) {
+          await conversation.startSession({ agentId })
+        } else {
+          try {
+            // For private agents, fetch a signed URL
+            const response = await fetch("/api/elevenlabs/get-signed-url")
+
+            // Check if response is ok
+            if (!response.ok) {
+              throw new Error("Failed to get signed URL: " + response.status)
+            }
+
+            // Make sure response is a valid Response object before calling json()
+            if (response && typeof response.json === "function") {
+              const data = await response.json()
+
+              // Check if data contains url property
+              if (data && data.url) {
+                await conversation.startSession({ url: data.url })
+              } else {
+                throw new Error("Invalid response format: missing URL")
+              }
+            } else {
+              throw new Error("Invalid response format: json method not available")
+            }
+          } catch (urlError) {
+            console.error("Failed to get signed URL:", urlError)
+            setErrorMessage(urlError instanceof Error ? urlError.message : "Failed to get signed URL")
+            setConversationState("error")
+          }
+        }
       } catch (err: any) {
         console.error("Failed to initialize conversation:", err)
         setErrorMessage(err?.message || "Failed to initialize conversation")
@@ -70,17 +102,35 @@ export function LukeButton() {
       }
     } else if (conversationState === "connected") {
       // If already connected, end the session
-      setConversationState("idle")
-      setIsSpeaking(false)
+      try {
+        await conversation.endSession()
+      } catch (err) {
+        console.error("Error ending session:", err)
+        setConversationState("idle") // Still set to idle even if there's an error ending
+      }
     }
   }
 
+  // Clean up the conversation when component unmounts
+  useEffect(() => {
+    return () => {
+      if (conversationRef.current && conversationState === "connected") {
+        try {
+          // @ts-ignore - we know this exists
+          conversationRef.current.endSession()
+        } catch (err) {
+          console.error("Error ending session during cleanup:", err)
+        }
+      }
+    }
+  }, [conversationState])
+
   // Get button text based on state
   const getButtonText = () => {
-    if (conversationState === "connecting" || isLoading) {
+    if (conversationState === "connecting") {
       return <Loader2 className="h-4 w-4 animate-spin" />
     } else if (conversationState === "connected") {
-      return isSpeaking ? "Speaking..." : "Listening..."
+      return conversation.isSpeaking ? "Speaking..." : "Listening..."
     } else if (conversationState === "error") {
       return "Try later"
     } else {
@@ -103,7 +153,7 @@ export function LukeButton() {
         backdropFilter: "blur(8px)",
       }}
       onClick={handleButtonClick}
-      disabled={conversationState === "connecting" || isLoading}
+      disabled={conversationState === "connecting"}
       title={errorMessage || undefined}
     >
       <span className="relative z-10 flex items-center justify-center whitespace-nowrap">{getButtonText()}</span>
