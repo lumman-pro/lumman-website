@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { elevenlabs } from "@ai-sdk/elevenlabs"
-import { StreamingTextResponse } from "ai"
+import { streamText } from "ai"
 
 export const runtime = "edge"
 
@@ -49,10 +49,40 @@ export async function POST(req: Request) {
       )
     }
 
-    // Return the stream directly
-    return new StreamingTextResponse(response.body)
+    // Use the new streaming API from AI SDK 4.0
+    const textStream = streamText()
+
+    // Process the response body
+    const reader = response.body?.getReader()
+    if (!reader) {
+      return NextResponse.json({ error: "Failed to get response reader" }, { status: 500 })
+    }
+    // Start reading the stream in the background
+    ;(async () => {
+      try {
+        const decoder = new TextDecoder()
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) {
+            textStream.close()
+            break
+          }
+          const text = decoder.decode(value)
+          textStream.append(text)
+        }
+      } catch (error) {
+        console.error("Error reading stream:", error)
+        textStream.abort(error instanceof Error ? error : new Error(String(error)))
+      }
+    })()
+
+    // Return the stream using the new API
+    return textStream.toDataStreamResponse()
   } catch (error) {
     console.error("Error in API route:", error)
-    return NextResponse.json({ error: "Internal server error", details: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
+      { status: 500 },
+    )
   }
 }
