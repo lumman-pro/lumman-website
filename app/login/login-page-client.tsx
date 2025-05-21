@@ -2,7 +2,7 @@
 
 import { PhoneAuthForm } from "@/components/auth/phone-auth-form"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 
 export default function LoginPageClient() {
   const { resolvedTheme } = useTheme()
@@ -31,8 +31,26 @@ export default function LoginPageClient() {
             <div className="w-[150px] h-[36px]" />
           )}
         </div>
-        <PhoneAuthForm />
+        <Suspense fallback={<AuthFormSkeleton />}>
+          <AuthFormWrapper />
+        </Suspense>
       </div>
+    </div>
+  )
+}
+
+// Separate component that uses useSearchParams
+function AuthFormWrapper() {
+  return <PhoneAuthForm />
+}
+
+// Skeleton loader for the auth form
+function AuthFormSkeleton() {
+  return (
+    <div className="w-full space-y-4">
+      <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
+      <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
+      <div className="h-10 w-3/4 mx-auto bg-muted animate-pulse rounded-md mt-6" />
     </div>
   )
 }

@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react"
 export function PhoneAuthForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get("redirect") || "/dashboard"
+  const redirectTo = searchParams?.get("redirect") || "/dashboard"
 
   const [phone, setPhone] = useState("")
   const [otp, setOtp] = useState("")
