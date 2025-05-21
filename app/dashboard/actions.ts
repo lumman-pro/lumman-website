@@ -48,8 +48,8 @@ export async function deleteConversation(id: string) {
     throw new Error("User not authenticated")
   }
 
-  // Soft delete the conversation
-  const { error } = await supabase.from("chats").update({ deleted: true }).eq("id", id).eq("user_id", user.id)
+  // Actually delete the conversation instead of marking it as deleted
+  const { error } = await supabase.from("chats").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
     console.error("Error deleting conversation:", error)

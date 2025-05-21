@@ -39,7 +39,7 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
         throw profileError
       }
 
-      // Delete user's chats
+      // Delete user's chats - directly delete them, no soft delete
       const { error: chatsError } = await supabaseClient.from("chats").delete().eq("user_id", user.id)
 
       if (chatsError) {

@@ -51,7 +51,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       const { data, error } = await supabaseClient
         .from("chats")
         .select("id, chat_name, created_at")
-        .eq("deleted", false)
+        // Removed the deleted filter since the column no longer exists
         .order("created_at", { ascending: false })
 
       if (error) {

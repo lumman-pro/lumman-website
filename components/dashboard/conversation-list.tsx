@@ -40,7 +40,7 @@ export function ConversationList({
       const { data, error } = await supabaseClient
         .from("chats")
         .select("id, chat_name, created_at, chat_duration")
-        .eq("deleted", false)
+        // Removed the deleted filter since the column no longer exists
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -153,7 +153,7 @@ export function ConversationList({
             </button>
           ) : (
             <div onClick={handleNewConversation}>
-              <LukeButton onConversationStart={handleNewConversation} />
+              <LukeButton />
             </div>
           )}
         </div>
