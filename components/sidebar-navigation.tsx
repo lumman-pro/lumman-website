@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/lib/supabase/auth"
 import { supabaseClient } from "@/lib/supabase/supabaseClient"
-import { MessageSquarePlus, User } from "lucide-react"
+import { MessageSquarePlus, User, LogOut } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { useUserProfile } from "@/hooks/use-user-profile"
 
@@ -28,8 +28,6 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
-
-  // Fix: Correctly destructure the useUserProfile hook as an object
   const { profile, isLoading: isProfileLoading } = useUserProfile()
 
   useEffect(() => {
@@ -89,7 +87,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-background border-r transition-all duration-300 ease-in-out",
+        "flex flex-col h-full w-full bg-background border-r transition-all duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
       )}
     >
@@ -150,9 +148,14 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
               className={cn("w-full justify-start text-sm", isActive("/account") && "bg-muted font-medium")}
             >
               <User className="h-4 w-4 mr-2" />
-              {isProfileLoading ? "Loading..." : profile?.user_name || "Your Account"}
+              {isProfileLoading ? "Loading..." : profile?.user_name || "Account Settings"}
             </Button>
           </Link>
+
+          <Button variant="ghost" className="w-full justify-start text-sm" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sign out
+          </Button>
         </nav>
       </div>
     </div>

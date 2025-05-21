@@ -62,16 +62,26 @@ export default function DashboardLayout({
       <div className="flex flex-1 relative">
         {/* Overlay for mobile */}
         {isSidebarOpen && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden" aria-hidden="true" />
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+            aria-hidden="true"
+            onClick={() => setIsSidebarOpen(false)}
+          />
         )}
 
         {/* Sidebar */}
-        <div className="fixed md:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] md:flex" data-sidebar="true">
+        <div
+          className={cn(
+            "fixed md:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] md:flex",
+            isSidebarOpen ? "flex" : "hidden md:flex",
+          )}
+          data-sidebar="true"
+        >
           <SidebarNavigation isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         </div>
 
         {/* Main content */}
-        <main className={cn("flex-1 transition-all duration-300 ease-in-out", isSidebarOpen ? "md:ml-0" : "md:ml-0")}>
+        <main className="flex-1 transition-all duration-300 ease-in-out">
           <div className="container py-6 md:py-10 max-w-full">{children}</div>
         </main>
       </div>
