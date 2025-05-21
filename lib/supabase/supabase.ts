@@ -35,10 +35,15 @@ export function createServerSupabaseClient() {
   )
 }
 
-// Browser-side Supabase client (singleton pattern)
+// Global browser client instance (true singleton)
 let browserSupabaseClient: ReturnType<typeof createBrowserClient<Database>> | null = null
 
+// Browser-side Supabase client (singleton pattern)
 export function createBrowserSupabaseClient() {
+  if (typeof window === "undefined") {
+    throw new Error("createBrowserSupabaseClient can only be called in the browser")
+  }
+
   if (browserSupabaseClient) return browserSupabaseClient
 
   browserSupabaseClient = createBrowserClient<Database>(

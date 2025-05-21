@@ -1,10 +1,35 @@
 "use server"
 
-import { createServerSupabaseClient } from "@/lib/supabase/supabase"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
+import type { Database } from "@/lib/supabase/database.types"
+
+// Helper function to create a Supabase client for server actions
+function createClient() {
+  const cookieStore = cookies()
+
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options) {
+          cookieStore.set({ name, value: "", ...options, maxAge: 0 })
+        },
+      },
+    },
+  )
+}
 
 export async function createConversation() {
-  const supabase = createServerSupabaseClient()
+  const supabase = createClient()
 
   // Get the current user
   const {
@@ -30,14 +55,13 @@ export async function createConversation() {
     return { error: error.message }
   }
 
-  // Revalidate the dashboard path to show the new conversation
   revalidatePath("/dashboard")
 
   return { data }
 }
 
 export async function deleteConversation(id: string) {
-  const supabase = createServerSupabaseClient()
+  const supabase = createClient()
 
   // Get the current user
   const {
@@ -56,40 +80,7 @@ export async function deleteConversation(id: string) {
     return { error: error.message }
   }
 
-  // Revalidate the dashboard path to update the UI
   revalidatePath("/dashboard")
 
   return { success: true }
-}
-
-export async function updateConversationTitle(id: string, title: string) {
-  const supabase = createServerSupabaseClient()
-
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: "Not authenticated" }
-  }
-
-  // Update the conversation title
-  const { data, error } = await supabase
-    .from("chats")
-    .update({ title })
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select("*")
-    .single()
-
-  if (error) {
-    console.error("Error updating conversation title:", error)
-    return { error: error.message }
-  }
-
-  // Revalidate the dashboard path to update the UI
-  revalidatePath("/dashboard")
-
-  return { data }
 }

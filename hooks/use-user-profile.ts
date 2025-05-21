@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createBrowserSupabaseClient } from "@/lib/supabase/supabase"
+import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
 export interface UserProfile {
@@ -18,7 +18,6 @@ export function useUserProfile() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
-  const supabase = createBrowserSupabaseClient()
 
   useEffect(() => {
     let isMounted = true
@@ -97,7 +96,7 @@ export function useUserProfile() {
     return () => {
       isMounted = false
     }
-  }, [supabase])
+  }, [])
 
   const updateProfile = async (name: string, email: string) => {
     try {
