@@ -34,7 +34,9 @@ export default async function CategoryPage({
   params: { slug: string }
   searchParams: { page?: string }
 }) {
-  const currentPage = searchParams.page ? Number.parseInt(searchParams.page) : 1
+  // Fix: Convert searchParams.page to number safely
+  const pageParam = searchParams?.page
+  const currentPage = pageParam ? Number.parseInt(pageParam, 10) : 1
   const offset = (currentPage - 1) * POSTS_PER_PAGE
 
   // Fetch data in parallel

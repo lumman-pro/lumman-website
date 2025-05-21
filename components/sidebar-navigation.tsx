@@ -29,8 +29,8 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
 
-  // Only fetch profile if user is authenticated
-  const [profile, isProfileLoading] = useUserProfile()
+  // Fix: Correctly destructure the useUserProfile hook as an object
+  const { profile, isLoading: isProfileLoading } = useUserProfile()
 
   useEffect(() => {
     // Check if user is logged in
