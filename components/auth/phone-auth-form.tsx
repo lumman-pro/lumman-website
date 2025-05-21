@@ -78,7 +78,7 @@ export function PhoneAuthForm() {
         <CardTitle className="text-2xl">Sign in with your phone</CardTitle>
         <CardDescription>
           {step === "phone"
-            ? "We'll send you a one-time code to verify your phone number"
+            ? "This lets you access your past conversations with Luke and get clarity on timelines and pricing"
             : "Enter the code we sent to your phone"}
         </CardDescription>
       </CardHeader>

@@ -90,7 +90,7 @@ export function FaqSection() {
             <div className="text-muted-foreground transition-colors duration-300 ease-in-out">
               <p className="transition-colors duration-300 ease-in-out">Costs vary based on what's being solved.</p>
               <p className="mt-2 transition-colors duration-300 ease-in-out">
-                Automation modules typically start in the low four figures and scale with scope and complexity.
+                AI Agents and Automation modules typically start in the low four figures and scale with scope and complexity.
               </p>
               <p className="mt-2 transition-colors duration-300 ease-in-out">
                 Advisory is offered as direct one-on-one work with executives, starting from several hundred per hour.

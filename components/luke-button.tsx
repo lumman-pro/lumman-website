@@ -5,7 +5,11 @@ import { useEffect, useState, useRef } from "react"
 import { useConversation } from "@/lib/elevenlabs"
 import { Loader2 } from "lucide-react"
 
-export function LukeButton() {
+interface LukeButtonProps {
+  onConversationStart?: () => Promise<string> | void
+}
+
+export function LukeButton({ onConversationStart }: LukeButtonProps = {}) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const [conversationState, setConversationState] = useState<"idle" | "connecting" | "connected" | "error">("idle")
   const conversationRef = useRef(null)
@@ -59,6 +63,11 @@ export function LukeButton() {
       try {
         // Request microphone access
         await navigator.mediaDevices.getUserMedia({ audio: true })
+
+        // If there's a callback for conversation start, call it
+        if (onConversationStart) {
+          await onConversationStart()
+        }
 
         // Start the conversation session
         const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID

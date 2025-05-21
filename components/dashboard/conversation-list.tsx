@@ -153,7 +153,7 @@ export function ConversationList({
             </button>
           ) : (
             <div onClick={handleNewConversation}>
-              <LukeButton />
+              <LukeButton onConversationStart={handleNewConversation} />
             </div>
           )}
         </div>
