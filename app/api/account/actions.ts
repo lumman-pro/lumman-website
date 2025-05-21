@@ -1,44 +1,43 @@
 "use server"
 
+import { createServerActionClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/lib/supabase/database.types"
 
 export async function deleteUserAccount() {
   const supabase = createServerActionClient<Database>({ cookies })
 
-  // Get the current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    throw new Error("User not authenticated")
+    return { success: false, error: "Not authenticated" }
   }
 
-  // Delete user profile
-  const { error: profileError } = await supabase.from("user_profiles").delete().eq("user_id", user.id)
+  try {
+    // Delete user's chats
+    await supabase.from("chats").delete().eq("user_id", user.id)
 
-  if (profileError) {
-    throw profileError
+    // Delete user's profile
+    await supabase.from("user_profiles").delete().eq("user_id", user.id)
+
+    // Delete the user account
+    const { error } = await supabase.auth.admin.deleteUser(user.id)
+
+    if (error) {
+      throw error
+    }
+
+    // Sign out the user
+    await supabase.auth.signOut()
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error("Error deleting account:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to delete account",
+    }
   }
-
-  // Delete user's chats
-  const { error: chatsError } = await supabase.from("chats").delete().eq("user_id", user.id)
-
-  if (chatsError) {
-    throw chatsError
-  }
-
-  // Delete the user account
-  const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
-
-  if (deleteError) {
-    throw deleteError
-  }
-
-  // Sign out
-  await supabase.auth.signOut()
-
-  return { success: true }
 }

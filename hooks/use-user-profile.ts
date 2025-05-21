@@ -111,7 +111,7 @@ export function useUserProfile() {
           user_email: email,
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", profile.user_id) // Changed from profile.id to profile.user_id to match RLS policy
+        .eq("user_id", profile.user_id)
         .select("*")
         .single()
 

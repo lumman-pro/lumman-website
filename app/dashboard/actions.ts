@@ -1,66 +1,80 @@
 "use server"
 
+import { createServerActionClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { revalidatePath } from "next/cache"
 import type { Database } from "@/lib/supabase/database.types"
 
-export async function createNewConversation() {
+export async function createNewChat() {
   const supabase = createServerActionClient<Database>({ cookies })
 
-  // Get the current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    throw new Error("User not authenticated")
+    return { error: "Not authenticated", chatId: null }
   }
 
-  // Create a new conversation
   const { data, error } = await supabase
     .from("chats")
     .insert({
       user_id: user.id,
-      chat_name: "New Conversation",
-      chat_summary: "This conversation has just started. Speak with Luke to generate content.",
-      chat_transcription: "",
+      chat_name: "New chat",
     })
     .select("id")
     .single()
 
   if (error) {
-    console.error("Error creating conversation:", error)
-    throw new Error("Failed to create new conversation")
+    console.error("Error creating chat:", error)
+    return { error: error.message, chatId: null }
   }
 
-  return data.id
+  revalidatePath("/dashboard")
+  return { error: null, chatId: data.id }
 }
 
 export async function deleteConversation(id: string) {
   const supabase = createServerActionClient<Database>({ cookies })
 
-  // Get the current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    throw new Error("User not authenticated")
+    return { error: "Not authenticated" }
   }
 
-  // Actually delete the conversation instead of marking it as deleted
+  // Perform a hard delete instead of soft delete
   const { error } = await supabase.from("chats").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error deleting conversation:", error)
-    throw new Error("Failed to delete conversation")
+    console.error("Error deleting chat:", error)
+    return { error: error.message }
   }
+
+  revalidatePath("/dashboard")
+  return { error: null }
 }
 
-export async function sendCaseToEstimate(id: string) {
-  // This would typically involve some backend processing
-  // For now, we'll just simulate a delay
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+export async function updateChatName(id: string, name: string) {
+  const supabase = createServerActionClient<Database>({ cookies })
 
-  return { success: true }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Not authenticated" }
+  }
+
+  const { error } = await supabase.from("chats").update({ chat_name: name }).eq("id", id).eq("user_id", user.id)
+
+  if (error) {
+    console.error("Error updating chat name:", error)
+    return { error: error.message }
+  }
+
+  revalidatePath(`/dashboard/chat/${id}`)
+  return { error: null }
 }

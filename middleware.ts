@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs"
+import { createMiddlewareClient } from "@supabase/ssr"
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
-  // For middleware, we still need to create a new client
-  // This is because middleware runs on the edge and can't share the browser client
+  // Create a Supabase client for the middleware
   const supabase = createMiddlewareClient({ req, res })
 
   const {
