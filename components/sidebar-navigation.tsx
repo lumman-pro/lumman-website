@@ -5,9 +5,11 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { signOut, supabaseClient } from "@/lib/supabase/auth"
-import { LogOut, MessageSquarePlus } from "lucide-react"
+import { signOut } from "@/lib/supabase/auth"
+import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { MessageSquarePlus, User } from "lucide-react"
 import { formatDate } from "@/lib/utils"
+import { useUserProfile } from "@/hooks/use-user-profile"
 
 interface Conversation {
   id: string
@@ -25,8 +27,21 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   const router = useRouter()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
+
+  // Only fetch profile if user is authenticated
+  const [profile, isProfileLoading] = useUserProfile()
 
   useEffect(() => {
+    // Check if user is logged in
+    const checkUser = async () => {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession()
+      setUser(session?.user || null)
+    }
+
+    checkUser()
     fetchConversations()
   }, [])
 
@@ -117,7 +132,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
         )}
       </div>
 
-      {/* Bottom section with links and sign out */}
+      {/* Bottom section with links and user profile */}
       <div className="p-4 border-t mt-auto">
         <nav className="space-y-2">
           <Link href="/insights" onClick={onClose}>
@@ -128,10 +143,16 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
               Insights
             </Button>
           </Link>
-          <Button variant="ghost" className="w-full justify-start text-sm" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign out
-          </Button>
+
+          <Link href="/account" onClick={onClose}>
+            <Button
+              variant="ghost"
+              className={cn("w-full justify-start text-sm", isActive("/account") && "bg-muted font-medium")}
+            >
+              <User className="h-4 w-4 mr-2" />
+              {isProfileLoading ? "Loading..." : profile?.user_name || "Your Account"}
+            </Button>
+          </Link>
         </nav>
       </div>
     </div>

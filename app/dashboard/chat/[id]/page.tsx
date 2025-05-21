@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabaseClient } from "@/lib/supabase/auth"
+import { supabaseClient } from "@/lib/supabase/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send, Trash2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
@@ -18,6 +18,7 @@ interface Conversation {
 }
 
 export default function ChatPage({ params }: { params: { id: string } }) {
+  const id = params.id // Store the id in a variable to avoid multiple accesses
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,12 +28,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
 
   useEffect(() => {
-    if (params.id) {
-      fetchConversation(params.id)
+    if (id) {
+      fetchConversation(id)
     }
-  }, [params.id])
+  }, [id])
 
-  const fetchConversation = async (id: string) => {
+  const fetchConversation = async (conversationId: string) => {
     try {
       setIsLoading(true)
       setError(null)
@@ -40,7 +41,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
       const { data, error } = await supabaseClient
         .from("chats")
         .select("id, chat_name, chat_summary, chat_transcription, created_at")
-        .eq("id", id)
+        .eq("id", conversationId)
         .single()
 
       if (error) {
@@ -57,11 +58,11 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   }
 
   const handleDelete = async () => {
-    if (!params.id) return
+    if (!id) return
 
     try {
       setIsDeleting(true)
-      await deleteConversation(params.id)
+      await deleteConversation(id)
       toast({
         title: "Conversation deleted",
         description: "The conversation has been successfully deleted.",
@@ -80,7 +81,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   }
 
   const handleSendForEstimate = async () => {
-    if (!params.id) return
+    if (!id) return
 
     try {
       setIsSendingEstimate(true)
@@ -117,7 +118,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-16rem)]">
         <p className="text-destructive">{error}</p>
-        <Button onClick={() => params.id && fetchConversation(params.id)} className="mt-4" variant="outline">
+        <Button onClick={() => id && fetchConversation(id)} className="mt-4" variant="outline">
           Try again
         </Button>
       </div>

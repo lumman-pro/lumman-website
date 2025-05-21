@@ -1,20 +1,4 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import type { Database } from "./database.types"
-
-export const supabaseClient = createClientComponentClient<Database>({
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  options: {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      // Set session lifetime to 1 year (in seconds)
-      flowType: "pkce",
-      detectSessionInUrl: true,
-      storageKey: "lumman-auth",
-    },
-  },
-})
+import { supabaseClient } from "./supabaseClient"
 
 export async function signInWithPhone(phone: string) {
   const { data, error } = await supabaseClient.auth.signInWithOtp({

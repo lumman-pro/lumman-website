@@ -1,18 +1,22 @@
 import { createBrowserClient } from "@supabase/ssr"
 import type { Database } from "@/lib/supabase/database.types"
 
-let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | null = null
+// Singleton instance
+let supabaseInstance: ReturnType<typeof createBrowserClient<Database>> | null = null
 
-export const getSupabaseClient = () => {
-  if (!supabaseClient) {
-    supabaseClient = createBrowserClient<Database>(
+/**
+ * Creates and returns a singleton instance of the Supabase client
+ * This ensures only one instance exists across the entire application
+ */
+export function getSupabaseClient() {
+  if (!supabaseInstance) {
+    supabaseInstance = createBrowserClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          // Set session lifetime to 1 year (in seconds)
           flowType: "pkce",
           detectSessionInUrl: true,
           storageKey: "lumman-auth",
@@ -20,5 +24,8 @@ export const getSupabaseClient = () => {
       },
     )
   }
-  return supabaseClient
+  return supabaseInstance
 }
+
+// Export a singleton instance directly for imports that need the client immediately
+export const supabaseClient = getSupabaseClient()

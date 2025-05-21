@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const cookieStore = cookies()
+    // For server components, we still need to create a new client
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Exchange the code for a session

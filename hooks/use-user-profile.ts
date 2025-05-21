@@ -1,0 +1,123 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { useToast } from "@/hooks/use-toast"
+
+export interface UserProfile {
+  id: string
+  user_id: string
+  user_name: string | null
+  user_email: string | null
+  created_at: string
+  updated_at: string | null
+}
+
+export function useUserProfile() {
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    fetchUserProfile()
+  }, [])
+
+  const fetchUserProfile = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      // Get current user
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser()
+
+      if (!user) {
+        // Handle unauthenticated state gracefully
+        setIsLoading(false)
+        return null
+      }
+
+      // Check if user profile exists
+      const { data: existingProfile, error: fetchError } = await supabaseClient
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      if (fetchError && fetchError.code !== "PGRST116") {
+        // PGRST116 is "no rows returned" error
+        throw fetchError
+      }
+
+      if (existingProfile) {
+        setProfile(existingProfile)
+      } else {
+        // Create a new profile if one doesn't exist
+        const { data: newProfile, error: insertError } = await supabaseClient
+          .from("user_profiles")
+          .insert({
+            user_id: user.id,
+            user_name: user.phone || null,
+            user_email: user.email || null,
+          })
+          .select("*")
+          .single()
+
+        if (insertError) {
+          throw insertError
+        }
+
+        setProfile(newProfile)
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err)
+      setError(err instanceof Error ? err.message : "Failed to load user profile")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateProfile = async (name: string, email: string) => {
+    try {
+      if (!profile) {
+        throw new Error("Profile not loaded")
+      }
+
+      const { data, error } = await supabaseClient
+        .from("user_profiles")
+        .update({
+          user_name: name,
+          user_email: email,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", profile.id)
+        .select("*")
+        .single()
+
+      if (error) {
+        throw error
+      }
+
+      setProfile(data)
+      return { success: true, data }
+    } catch (err) {
+      console.error("Error updating profile:", err)
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to update profile",
+        variant: "destructive",
+      })
+      return { success: false, error: err }
+    }
+  }
+
+  return {
+    profile,
+    isLoading,
+    error,
+    fetchUserProfile,
+    updateProfile,
+  }
+}

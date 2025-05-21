@@ -5,8 +5,9 @@ import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { supabaseClient } from "@/lib/supabase/auth"
+import { supabaseClient } from "@/lib/supabase/supabaseClient"
 import { Menu, User, X } from "lucide-react"
+import { useUserProfile } from "@/hooks/use-user-profile"
 
 export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void; isMenuOpen?: boolean }) {
   const { resolvedTheme } = useTheme()
@@ -15,6 +16,9 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Only fetch profile if user is authenticated
+  const { profile, isLoading: isProfileLoading } = useUserProfile()
 
   useEffect(() => {
     setMounted(true)
@@ -59,7 +63,7 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
           <>
             {/* Left side: Hamburger menu on mobile */}
             <div className="md:hidden">
-              <Button variant="ghost" size="icon" aria-label="Menu" onClick={onMenuToggle}>
+              <Button variant="ghost" size="icon" aria-label="Menu" onClick={onMenuToggle} data-sidebar-toggle="true">
                 {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </div>
@@ -78,6 +82,19 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
                 ) : (
                   <div className="w-[120px] h-[24px]" />
                 )}
+              </Link>
+            </div>
+
+            {/* Right: User profile link (visible on desktop) */}
+            <div className="hidden md:flex">
+              <Link href="/account">
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 text-sm transition-colors duration-300 ease-in-out"
+                >
+                  <User className="h-4 w-4 text-foreground transition-colors duration-300 ease-in-out" />
+                  <span>{isProfileLoading ? "Loading..." : profile?.user_name || "Your Account"}</span>
+                </Button>
               </Link>
             </div>
           </>

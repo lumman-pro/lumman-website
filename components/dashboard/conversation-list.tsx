@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabaseClient } from "@/lib/supabase/auth"
+import { supabaseClient } from "@/lib/supabase/supabaseClient"
 import { LukeButton } from "@/components/luke-button"
 import { Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
