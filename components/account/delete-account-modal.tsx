@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
 interface DeleteAccountModalProps {
@@ -26,35 +26,35 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
       // Get current user
       const {
         data: { user },
-      } = await supabaseClient.auth.getUser()
+      } = await supabase.auth.getUser()
 
       if (!user) {
         throw new Error("User not authenticated")
       }
 
       // Delete user profile
-      const { error: profileError } = await supabaseClient.from("user_profiles").delete().eq("user_id", user.id)
+      const { error: profileError } = await supabase.from("user_profiles").delete().eq("user_id", user.id)
 
       if (profileError) {
         throw profileError
       }
 
       // Delete user's chats - directly delete them, no soft delete
-      const { error: chatsError } = await supabaseClient.from("chats").delete().eq("user_id", user.id)
+      const { error: chatsError } = await supabase.from("chats").delete().eq("user_id", user.id)
 
       if (chatsError) {
         throw chatsError
       }
 
       // Delete the user account
-      const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(user.id)
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
 
       if (deleteError) {
         throw deleteError
       }
 
       // Sign out
-      await supabaseClient.auth.signOut()
+      await supabase.auth.signOut()
 
       // Redirect to home page
       router.push("/")

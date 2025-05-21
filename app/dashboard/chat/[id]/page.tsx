@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send, Trash2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
@@ -38,7 +38,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
       setIsLoading(true)
       setError(null)
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("chats")
         .select("id, chat_name, chat_summary, chat_transcription, created_at")
         .eq("id", conversationId)

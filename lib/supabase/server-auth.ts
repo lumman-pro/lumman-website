@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "./supabase"
+import { createServerSupabaseClient } from "./client"
 import { redirect } from "next/navigation"
 
 export async function getServerSession() {

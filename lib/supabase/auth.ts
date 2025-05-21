@@ -1,6 +1,6 @@
 "use client"
 
-import { createBrowserSupabaseClient } from "./supabase"
+import { createBrowserSupabaseClient } from "./client"
 
 export async function signInWithPhone(phone: string) {
   const supabase = createBrowserSupabaseClient()

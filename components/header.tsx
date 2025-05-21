@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { supabase } from "@/lib/supabase/client"
 import { Menu, User, X } from "lucide-react"
 
 export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void; isMenuOpen?: boolean }) {
@@ -23,9 +23,11 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
     // Check if user is logged in
     const checkUser = async () => {
       try {
+        if (!supabase) return // Ensure supabase is available
+
         const {
           data: { session },
-        } = await supabaseClient.auth.getSession()
+        } = await supabase.auth.getSession()
         setUser(session?.user || null)
       } catch (error) {
         console.error("Error checking auth session:", error)
@@ -37,14 +39,17 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
     checkUser()
 
     // Set up auth state listener
-    const {
-      data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null)
-    })
+    let subscription: { unsubscribe: () => void } | undefined
+
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        setUser(session?.user || null)
+      })
+      subscription = data.subscription
+    }
 
     return () => {
-      subscription.unsubscribe()
+      subscription?.unsubscribe()
     }
   }, [])
 

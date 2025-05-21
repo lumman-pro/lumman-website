@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/lib/supabase/auth"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { supabase } from "@/lib/supabase/client"
 import { MessageSquarePlus, User, LogOut } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { useUserProfile } from "@/hooks/use-user-profile"
@@ -35,7 +35,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
     const checkUser = async () => {
       const {
         data: { session },
-      } = await supabaseClient.auth.getSession()
+      } = await supabase.auth.getSession()
       setUser(session?.user || null)
     }
 
@@ -46,7 +46,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   const fetchConversations = async () => {
     try {
       setIsLoading(true)
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("chats")
         .select("id, chat_name, created_at")
         // Removed the deleted filter since the column no longer exists

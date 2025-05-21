@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send, Trash2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
@@ -41,7 +41,7 @@ export function ConversationDetail({ conversationId, onDelete }: ConversationDet
       setIsLoading(true)
       setError(null)
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("chats")
         .select("id, chat_name, chat_summary, chat_transcription, created_at")
         .eq("id", id)

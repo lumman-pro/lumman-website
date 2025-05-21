@@ -1,4 +1,4 @@
-import { createClient } from "./supabase/server"
+import { createServerSupabaseClient } from "./supabase/client"
 import type { Database } from "./supabase/database.types"
 
 export type Post = Database["public"]["Tables"]["insights_posts"]["Row"] & {
@@ -21,7 +21,7 @@ export async function getPosts({
   includeUnpublished?: boolean
 } = {}): Promise<{ posts: Post[]; count: number }> {
   try {
-    const supabase = createClient()
+    const supabase = createServerSupabaseClient()
 
     // Start with a basic query
     let query = supabase.from("insights_posts").select("*, author:insights_authors(*)", { count: "exact" })
@@ -33,36 +33,41 @@ export async function getPosts({
     // If filtering by category, we need to handle this differently
     let categoryId: string | null = null
     if (categorySlug) {
-      const { data: categoryData, error: categoryError } = await supabase
-        .from("insights_categories")
-        .select("id")
-        .eq("slug", categorySlug)
-        .single()
+      try {
+        const { data: categoryData, error: categoryError } = await supabase
+          .from("insights_categories")
+          .select("id")
+          .eq("slug", categorySlug)
+          .single()
 
-      if (categoryError) {
-        console.error("Error fetching category:", categoryError)
+        if (categoryError) {
+          console.error("Error fetching category:", categoryError)
+          return { posts: [], count: 0 }
+        }
+
+        if (categoryData) {
+          categoryId = categoryData.id
+          const { data: postIds, error: postIdsError } = await supabase
+            .from("insights_posts_categories")
+            .select("post_id")
+            .eq("category_id", categoryId)
+
+          if (postIdsError) {
+            console.error("Error fetching post IDs:", postIdsError)
+            return { posts: [], count: 0 }
+          }
+
+          if (postIds && postIds.length > 0) {
+            const ids = postIds.map((item) => item.post_id)
+            query = query.in("id", ids)
+          } else {
+            // No posts in this category
+            return { posts: [], count: 0 }
+          }
+        }
+      } catch (err) {
+        console.error("Error in category processing:", err)
         return { posts: [], count: 0 }
-      }
-
-      if (categoryData) {
-        categoryId = categoryData.id
-        const { data: postIds, error: postIdsError } = await supabase
-          .from("insights_posts_categories")
-          .select("post_id")
-          .eq("category_id", categoryId)
-
-        if (postIdsError) {
-          console.error("Error fetching post IDs:", postIdsError)
-          return { posts: [], count: 0 }
-        }
-
-        if (postIds && postIds.length > 0) {
-          const ids = postIds.map((item) => item.post_id)
-          query = query.in("id", ids)
-        } else {
-          // No posts in this category
-          return { posts: [], count: 0 }
-        }
       }
     }
 
@@ -86,61 +91,67 @@ export async function getPosts({
       return { posts: [], count: 0 }
     }
 
-    // Get all post-category relationships in one query
-    const { data: allPostCategories, error: categoriesError } = await supabase
-      .from("insights_posts_categories")
-      .select("post_id, category_id")
-      .in("post_id", postIds)
+    try {
+      // Get all post-category relationships in one query
+      const { data: allPostCategories, error: categoriesError } = await supabase
+        .from("insights_posts_categories")
+        .select("post_id, category_id")
+        .in("post_id", postIds)
 
-    if (categoriesError) {
-      console.error("Error fetching post categories:", categoriesError)
-      // Return posts without categories rather than failing completely
-      return { posts, count: count || 0 }
-    }
-
-    // Get all unique category IDs
-    const categoryIds = [...new Set(allPostCategories?.map((pc) => pc.category_id) || [])]
-
-    // Fetch all categories in one query
-    let categoriesMap: Record<string, any> = {}
-    if (categoryIds.length > 0) {
-      const { data: categories, error: categoriesFetchError } = await supabase
-        .from("insights_categories")
-        .select("*")
-        .in("id", categoryIds)
-
-      if (categoriesFetchError) {
-        console.error("Error fetching categories:", categoriesFetchError)
+      if (categoriesError) {
+        console.error("Error fetching post categories:", categoriesError)
         // Return posts without categories rather than failing completely
         return { posts, count: count || 0 }
       }
 
-      // Create a map for quick lookup
-      categoriesMap = (categories || []).reduce(
-        (acc, category) => {
-          acc[category.id] = category
-          return acc
-        },
-        {} as Record<string, any>,
-      )
-    }
+      // Get all unique category IDs
+      const categoryIds = [...new Set(allPostCategories?.map((pc) => pc.category_id) || [])]
 
-    // Map categories to posts
-    const postsWithCategories = (posts || []).map((post) => {
-      const postCategoryRelations = allPostCategories?.filter((pc) => pc.post_id === post.id) || []
-      const postCategories = postCategoryRelations
-        .map((relation) => categoriesMap[relation.category_id])
-        .filter(Boolean)
+      // Fetch all categories in one query
+      let categoriesMap: Record<string, any> = {}
+      if (categoryIds.length > 0) {
+        const { data: categories, error: categoriesFetchError } = await supabase
+          .from("insights_categories")
+          .select("*")
+          .in("id", categoryIds)
+
+        if (categoriesFetchError) {
+          console.error("Error fetching categories:", categoriesFetchError)
+          // Return posts without categories rather than failing completely
+          return { posts, count: count || 0 }
+        }
+
+        // Create a map for quick lookup
+        categoriesMap = (categories || []).reduce(
+          (acc, category) => {
+            acc[category.id] = category
+            return acc
+          },
+          {} as Record<string, any>,
+        )
+      }
+
+      // Map categories to posts
+      const postsWithCategories = (posts || []).map((post) => {
+        const postCategoryRelations = allPostCategories?.filter((pc) => pc.post_id === post.id) || []
+        const postCategories = postCategoryRelations
+          .map((relation) => categoriesMap[relation.category_id])
+          .filter(Boolean)
+
+        return {
+          ...post,
+          categories: postCategories,
+        }
+      })
 
       return {
-        ...post,
-        categories: postCategories,
+        posts: postsWithCategories,
+        count: count || 0,
       }
-    })
-
-    return {
-      posts: postsWithCategories,
-      count: count || 0,
+    } catch (err) {
+      console.error("Error processing categories:", err)
+      // Return posts without categories if there's an error
+      return { posts, count: count || 0 }
     }
   } catch (error) {
     console.error("Error in getPosts:", error)
@@ -148,10 +159,30 @@ export async function getPosts({
   }
 }
 
+// Optimize the getCategories function with better error handling
+export async function getCategories(): Promise<Category[]> {
+  try {
+    const supabase = createServerSupabaseClient()
+
+    const { data: categories, error } = await supabase.from("insights_categories").select("*").order("name")
+
+    if (error) {
+      console.error("Error fetching categories:", error)
+      throw error
+    }
+
+    return categories || []
+  } catch (error) {
+    console.error("Error in getCategories:", error)
+    // Return empty array instead of throwing to prevent page crashes
+    return []
+  }
+}
+
 // Optimize the getPostBySlug function to reduce sequential queries
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
-    const supabase = createClient()
+    const supabase = createServerSupabaseClient()
 
     const { data: post, error } = await supabase
       .from("insights_posts")
@@ -164,67 +195,57 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       return null
     }
 
-    // Fetch categories for the post in a single query chain
-    const { data: postCategories, error: categoriesError } = await supabase
-      .from("insights_posts_categories")
-      .select("category_id")
-      .eq("post_id", post.id)
+    try {
+      // Fetch categories for the post in a single query chain
+      const { data: postCategories, error: categoriesError } = await supabase
+        .from("insights_posts_categories")
+        .select("category_id")
+        .eq("post_id", post.id)
 
-    if (categoriesError) {
-      console.error("Error fetching post categories:", categoriesError)
-      // Return post without categories rather than failing completely
+      if (categoriesError) {
+        console.error("Error fetching post categories:", categoriesError)
+        // Return post without categories rather than failing completely
+        return {
+          ...post,
+          categories: [],
+        }
+      }
+
+      if (!postCategories || postCategories.length === 0) {
+        return {
+          ...post,
+          categories: [],
+        }
+      }
+
+      const categoryIds = postCategories.map((pc) => pc.category_id)
+      const { data: categories, error: categoriesFetchError } = await supabase
+        .from("insights_categories")
+        .select("*")
+        .in("id", categoryIds)
+
+      if (categoriesFetchError) {
+        console.error("Error fetching categories:", categoriesFetchError)
+        // Return post without categories rather than failing completely
+        return {
+          ...post,
+          categories: [],
+        }
+      }
+
+      return {
+        ...post,
+        categories: categories || [],
+      }
+    } catch (err) {
+      console.error("Error processing post categories:", err)
       return {
         ...post,
         categories: [],
       }
-    }
-
-    if (!postCategories || postCategories.length === 0) {
-      return {
-        ...post,
-        categories: [],
-      }
-    }
-
-    const categoryIds = postCategories.map((pc) => pc.category_id)
-    const { data: categories, error: categoriesFetchError } = await supabase
-      .from("insights_categories")
-      .select("*")
-      .in("id", categoryIds)
-
-    if (categoriesFetchError) {
-      console.error("Error fetching categories:", categoriesFetchError)
-      // Return post without categories rather than failing completely
-      return {
-        ...post,
-        categories: [],
-      }
-    }
-
-    return {
-      ...post,
-      categories: categories || [],
     }
   } catch (error) {
     console.error("Error in getPostBySlug:", error)
     return null
-  }
-}
-
-export async function getCategories(): Promise<Category[]> {
-  try {
-    const supabase = createClient()
-
-    const { data: categories, error } = await supabase.from("insights_categories").select("*").order("name")
-
-    if (error) {
-      console.error("Error fetching categories:", error)
-      return []
-    }
-
-    return categories
-  } catch (error) {
-    console.error("Error in getCategories:", error)
-    return []
   }
 }

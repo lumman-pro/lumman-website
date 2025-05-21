@@ -1,35 +1,10 @@
 "use server"
 
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createServerSupabaseClient } from "@/lib/supabase/client"
 import { revalidatePath } from "next/cache"
-import type { Database } from "@/lib/supabase/database.types"
-
-// Helper function to create a Supabase client for server actions
-function createClient() {
-  const cookieStore = cookies()
-
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options) {
-          cookieStore.set({ name, value: "", ...options, maxAge: 0 })
-        },
-      },
-    },
-  )
-}
 
 export async function createConversation() {
-  const supabase = createClient()
+  const supabase = createServerSupabaseClient()
 
   // Get the current user
   const {
@@ -61,7 +36,7 @@ export async function createConversation() {
 }
 
 export async function deleteConversation(id: string) {
-  const supabase = createClient()
+  const supabase = createServerSupabaseClient()
 
   // Get the current user
   const {

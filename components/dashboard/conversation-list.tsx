@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { supabase } from "@/lib/supabase/client"
 import { LukeButton } from "@/components/luke-button"
 import { Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
@@ -37,7 +37,7 @@ export function ConversationList({
   const fetchConversations = async () => {
     try {
       setIsLoading(true)
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("chats")
         .select("id, chat_name, created_at, chat_duration")
         // Removed the deleted filter since the column no longer exists
