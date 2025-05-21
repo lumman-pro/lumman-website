@@ -72,8 +72,8 @@ export default function DashboardLayout({
         {/* Sidebar */}
         <div
           className={cn(
-            "fixed md:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)] md:flex",
-            isSidebarOpen ? "flex" : "hidden md:flex",
+            "fixed md:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)]",
+            isSidebarOpen ? "block" : "hidden md:block",
           )}
           data-sidebar="true"
         >

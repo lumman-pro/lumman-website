@@ -20,64 +20,83 @@ export function useUserProfile() {
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchUserProfile()
-  }, [])
+    let isMounted = true
 
-  const fetchUserProfile = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
+    const fetchUserProfile = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
 
-      // Get current user
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser()
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabaseClient.auth.getUser()
 
-      if (!user) {
-        // Handle unauthenticated state gracefully
-        setIsLoading(false)
-        return null
-      }
+        if (userError) throw userError
 
-      // Check if user profile exists
-      const { data: existingProfile, error: fetchError } = await supabaseClient
-        .from("user_profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (fetchError && fetchError.code !== "PGRST116") {
-        // PGRST116 is "no rows returned" error
-        throw fetchError
-      }
-
-      if (existingProfile) {
-        setProfile(existingProfile)
-      } else {
-        // Create a new profile if one doesn't exist
-        const { data: newProfile, error: insertError } = await supabaseClient
-          .from("user_profiles")
-          .insert({
-            user_id: user.id,
-            user_name: user.phone || null,
-            user_email: user.email || null,
-          })
-          .select("*")
-          .single()
-
-        if (insertError) {
-          throw insertError
+        if (!user) {
+          // Handle unauthenticated state gracefully
+          if (isMounted) {
+            setIsLoading(false)
+          }
+          return null
         }
 
-        setProfile(newProfile)
+        // Check if user profile exists
+        const { data: existingProfile, error: fetchError } = await supabaseClient
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single()
+
+        if (fetchError && fetchError.code !== "PGRST116") {
+          // PGRST116 is "no rows returned" error
+          throw fetchError
+        }
+
+        if (existingProfile) {
+          if (isMounted) {
+            setProfile(existingProfile)
+          }
+        } else {
+          // Create a new profile if one doesn't exist
+          const { data: newProfile, error: insertError } = await supabaseClient
+            .from("user_profiles")
+            .insert({
+              user_id: user.id,
+              user_name: user.phone || null,
+              user_email: user.email || null,
+            })
+            .select("*")
+            .single()
+
+          if (insertError) {
+            throw insertError
+          }
+
+          if (isMounted) {
+            setProfile(newProfile)
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching user profile:", err)
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Failed to load user profile")
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
-    } catch (err) {
-      console.error("Error fetching user profile:", err)
-      setError(err instanceof Error ? err.message : "Failed to load user profile")
-    } finally {
-      setIsLoading(false)
     }
-  }
+
+    fetchUserProfile()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const updateProfile = async (name: string, email: string) => {
     try {
@@ -117,7 +136,7 @@ export function useUserProfile() {
     profile,
     isLoading,
     error,
-    fetchUserProfile,
+    fetchUserProfile: async () => {}, // Placeholder to maintain API
     updateProfile,
   }
 }

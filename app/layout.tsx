@@ -1,4 +1,4 @@
-import type React from "react"
+import type { ReactNode } from "react"
 import "@/app/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Inter } from "next/font/google"
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
     <html lang="en" suppressHydrationWarning className="theme-transition">

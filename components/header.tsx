@@ -7,27 +7,31 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { supabaseClient } from "@/lib/supabase/supabaseClient"
 import { Menu, User, X } from "lucide-react"
-import { useUserProfile } from "@/hooks/use-user-profile"
 
 export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void; isMenuOpen?: boolean }) {
-  const { resolvedTheme } = useTheme()
+  const { resolvedTheme, theme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const { profile, isLoading: isProfileLoading } = useUserProfile()
 
   useEffect(() => {
+    // Mark component as mounted
     setMounted(true)
 
     // Check if user is logged in
     const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession()
-      setUser(session?.user || null)
-      setIsLoading(false)
+      try {
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession()
+        setUser(session?.user || null)
+      } catch (error) {
+        console.error("Error checking auth session:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     checkUser()
@@ -44,7 +48,7 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
     }
   }, [])
 
-  // Use absolute URLs to ensure the images are found
+  // Determine which logo to show based on theme
   const logoSrc = mounted ? (resolvedTheme === "dark" ? "/lumman_white.svg" : "/lumman_black.svg") : null
 
   const isActive = (path: string) => {
@@ -53,38 +57,53 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
 
   const isAuthenticated = !!user && !isLoading
 
+  // Show a placeholder during SSR/before mounting to prevent layout shift
+  if (!mounted) {
+    return (
+      <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur transition-colors duration-300 ease-in-out">
+        <div className="container max-w-7xl flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-[100px] h-[24px] bg-muted/20 rounded animate-pulse" />
+          </div>
+          <nav className="flex items-center space-x-6">
+            <div className="w-[60px] h-[20px] bg-muted/20 rounded animate-pulse" />
+            <div className="w-[24px] h-[24px] bg-muted/20 rounded-full animate-pulse" />
+          </nav>
+        </div>
+      </header>
+    )
+  }
+
+  // Check if we're on a dashboard page
+  const isDashboardPage = pathname.startsWith("/dashboard")
+
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur transition-colors duration-300 ease-in-out">
       <div className="container max-w-7xl flex h-16 items-center justify-between">
         {/* Left side: Logo and hamburger menu on mobile for authenticated users */}
         <div className="flex items-center">
-          {isAuthenticated && (
-            <div className="md:hidden mr-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Menu"
-                onClick={onMenuToggle}
-                data-sidebar-toggle="true"
-                className="focus:outline-none"
-              >
-                {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </div>
+          {/* Only show hamburger menu if authenticated AND on dashboard pages */}
+          {isAuthenticated && isDashboardPage && (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Menu"
+              onClick={onMenuToggle}
+              data-sidebar-toggle="true"
+              className="mr-4 md:hidden focus:outline-none"
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           )}
 
           <Link href="/" className="flex items-center space-x-2">
-            {logoSrc ? (
-              <img
-                src={logoSrc || "/placeholder.svg"}
-                alt="Lumman.ai"
-                width={100}
-                height={24}
-                className="transition-opacity duration-300 ease-in-out"
-              />
-            ) : (
-              <div className="w-[120px] h-[24px]" />
-            )}
+            <img
+              src={logoSrc || (theme === "dark" ? "/lumman_white.svg" : "/lumman_black.svg")}
+              alt="Lumman.ai"
+              width={100}
+              height={24}
+              className="transition-opacity duration-300 ease-in-out"
+            />
           </Link>
         </div>
 

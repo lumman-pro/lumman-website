@@ -85,12 +85,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   }
 
   return (
-    <div
-      className={cn(
-        "flex flex-col h-full w-full bg-background border-r transition-all duration-300 ease-in-out",
-        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-      )}
-    >
+    <div className={cn("flex flex-col h-full w-full bg-background border-r transition-all duration-300 ease-in-out")}>
       {/* Top section with New Chat button */}
       <div className="p-4 border-b">
         <Button variant="ghost" className="w-full justify-start text-sm font-medium" onClick={handleNewChat}>
