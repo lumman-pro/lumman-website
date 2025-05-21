@@ -1,21 +1,20 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
-import type { Database } from "@/lib/supabase/database.types"
+import { createServerSupabaseClient } from "@/lib/supabase/supabase"
 
 export async function deleteUserAccount() {
-  const supabase = createServerActionClient<Database>({ cookies })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { success: false, error: "Not authenticated" }
-  }
+  const supabase = createServerSupabaseClient()
 
   try {
+    // Get the current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return { error: "Not authenticated" }
+    }
+
     // Delete user's chats
     await supabase.from("chats").delete().eq("user_id", user.id)
 
@@ -32,9 +31,9 @@ export async function deleteUserAccount() {
     // Sign out the user
     await supabase.auth.signOut()
 
-    return { success: true, error: null }
+    return { success: true }
   } catch (error) {
-    console.error("Error deleting account:", error)
+    console.error("Error deleting user account:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to delete account",

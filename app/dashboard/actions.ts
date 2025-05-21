@@ -1,42 +1,45 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createServerSupabaseClient } from "@/lib/supabase/supabase"
 import { revalidatePath } from "next/cache"
-import type { Database } from "@/lib/supabase/database.types"
 
-export async function createNewChat() {
-  const supabase = createServerActionClient<Database>({ cookies })
+export async function createConversation() {
+  const supabase = createServerSupabaseClient()
 
+  // Get the current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return { error: "Not authenticated", chatId: null }
+    return { error: "Not authenticated" }
   }
 
+  // Create a new conversation
   const { data, error } = await supabase
     .from("chats")
     .insert({
       user_id: user.id,
-      chat_name: "New chat",
+      title: "New chat",
     })
-    .select("id")
+    .select("*")
     .single()
 
   if (error) {
-    console.error("Error creating chat:", error)
-    return { error: error.message, chatId: null }
+    console.error("Error creating conversation:", error)
+    return { error: error.message }
   }
 
+  // Revalidate the dashboard path to show the new conversation
   revalidatePath("/dashboard")
-  return { error: null, chatId: data.id }
+
+  return { data }
 }
 
 export async function deleteConversation(id: string) {
-  const supabase = createServerActionClient<Database>({ cookies })
+  const supabase = createServerSupabaseClient()
 
+  // Get the current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -45,21 +48,24 @@ export async function deleteConversation(id: string) {
     return { error: "Not authenticated" }
   }
 
-  // Perform a hard delete instead of soft delete
+  // Delete the conversation
   const { error } = await supabase.from("chats").delete().eq("id", id).eq("user_id", user.id)
 
   if (error) {
-    console.error("Error deleting chat:", error)
+    console.error("Error deleting conversation:", error)
     return { error: error.message }
   }
 
+  // Revalidate the dashboard path to update the UI
   revalidatePath("/dashboard")
-  return { error: null }
+
+  return { success: true }
 }
 
-export async function updateChatName(id: string, name: string) {
-  const supabase = createServerActionClient<Database>({ cookies })
+export async function updateConversationTitle(id: string, title: string) {
+  const supabase = createServerSupabaseClient()
 
+  // Get the current user
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -68,13 +74,22 @@ export async function updateChatName(id: string, name: string) {
     return { error: "Not authenticated" }
   }
 
-  const { error } = await supabase.from("chats").update({ chat_name: name }).eq("id", id).eq("user_id", user.id)
+  // Update the conversation title
+  const { data, error } = await supabase
+    .from("chats")
+    .update({ title })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select("*")
+    .single()
 
   if (error) {
-    console.error("Error updating chat name:", error)
+    console.error("Error updating conversation title:", error)
     return { error: error.message }
   }
 
-  revalidatePath(`/dashboard/chat/${id}`)
-  return { error: null }
+  // Revalidate the dashboard path to update the UI
+  revalidatePath("/dashboard")
+
+  return { data }
 }

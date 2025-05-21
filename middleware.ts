@@ -1,26 +1,24 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createMiddlewareClient } from "@supabase/ssr"
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
 
-  // Create a Supabase client for the middleware
-  const supabase = createMiddlewareClient({ req, res })
+  // Check if the user is trying to access a protected route
+  if (req.nextUrl.pathname.startsWith("/dashboard")) {
+    // Get the session cookie
+    const sessionCookie = req.cookies.get("sb-auth-token")
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  // If no session and trying to access protected route
-  if (!session && req.nextUrl.pathname.startsWith("/dashboard")) {
-    const redirectUrl = new URL("/login", req.url)
-    redirectUrl.searchParams.set("redirect", req.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
+    // If no session cookie, redirect to login
+    if (!sessionCookie) {
+      const redirectUrl = new URL("/login", req.url)
+      redirectUrl.searchParams.set("redirect", req.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
-  // If session exists and trying to access login
-  if (session && req.nextUrl.pathname === "/login") {
+  // If trying to access login page with a session cookie, redirect to dashboard
+  if (req.nextUrl.pathname === "/login" && req.cookies.get("sb-auth-token")) {
     return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, type ReactNode } from "react"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { createBrowserSupabaseClient } from "@/lib/supabase/supabase"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "@/lib/supabase/database.types"
 
@@ -12,8 +12,7 @@ type SupabaseContext = {
 const Context = createContext<SupabaseContext | undefined>(undefined)
 
 export function SupabaseProvider({ children }: { children: ReactNode }) {
-  // Use the singleton instance directly
-  const [supabase] = useState(() => supabaseClient)
+  const [supabase] = useState(() => createBrowserSupabaseClient())
 
   return <Context.Provider value={{ supabase }}>{children}</Context.Provider>
 }

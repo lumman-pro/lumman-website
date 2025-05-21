@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabaseClient } from "@/lib/supabase/supabaseClient"
+import { createBrowserSupabaseClient } from "@/lib/supabase/supabase"
 import { useToast } from "@/hooks/use-toast"
 
 export interface UserProfile {
@@ -18,6 +18,7 @@ export function useUserProfile() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const supabase = createBrowserSupabaseClient()
 
   useEffect(() => {
     let isMounted = true
@@ -31,7 +32,7 @@ export function useUserProfile() {
         const {
           data: { user },
           error: userError,
-        } = await supabaseClient.auth.getUser()
+        } = await supabase.auth.getUser()
 
         if (userError) throw userError
 
@@ -44,7 +45,7 @@ export function useUserProfile() {
         }
 
         // Check if user profile exists
-        const { data: existingProfile, error: fetchError } = await supabaseClient
+        const { data: existingProfile, error: fetchError } = await supabase
           .from("user_profiles")
           .select("*")
           .eq("user_id", user.id)
@@ -61,7 +62,7 @@ export function useUserProfile() {
           }
         } else {
           // Create a new profile if one doesn't exist
-          const { data: newProfile, error: insertError } = await supabaseClient
+          const { data: newProfile, error: insertError } = await supabase
             .from("user_profiles")
             .insert({
               user_id: user.id,
@@ -96,7 +97,7 @@ export function useUserProfile() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [supabase])
 
   const updateProfile = async (name: string, email: string) => {
     try {
@@ -104,7 +105,7 @@ export function useUserProfile() {
         throw new Error("Profile not loaded")
       }
 
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabase
         .from("user_profiles")
         .update({
           user_name: name,

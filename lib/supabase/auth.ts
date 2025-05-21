@@ -1,11 +1,13 @@
-import { supabaseClient } from "./supabaseClient"
+"use client"
+
+import { createBrowserSupabaseClient } from "./supabase"
 
 export async function signInWithPhone(phone: string) {
-  const { data, error } = await supabaseClient.auth.signInWithOtp({
+  const supabase = createBrowserSupabaseClient()
+
+  const { data, error } = await supabase.auth.signInWithOtp({
     phone,
     options: {
-      // Set session expiry to 1 year (in seconds)
-      // 60 seconds * 60 minutes * 24 hours * 365 days = 31,536,000 seconds
       emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
   })
@@ -14,7 +16,9 @@ export async function signInWithPhone(phone: string) {
 }
 
 export async function verifyOtp(phone: string, token: string) {
-  const { data, error } = await supabaseClient.auth.verifyOtp({
+  const supabase = createBrowserSupabaseClient()
+
+  const { data, error } = await supabase.auth.verifyOtp({
     phone,
     token,
     type: "sms",
@@ -24,13 +28,15 @@ export async function verifyOtp(phone: string, token: string) {
 }
 
 export async function signOut() {
-  const { error } = await supabaseClient.auth.signOut()
+  const supabase = createBrowserSupabaseClient()
+  const { error } = await supabase.auth.signOut()
   return { error }
 }
 
 export async function getCurrentUser() {
+  const supabase = createBrowserSupabaseClient()
   const {
     data: { user },
-  } = await supabaseClient.auth.getUser()
+  } = await supabase.auth.getUser()
   return user
 }
