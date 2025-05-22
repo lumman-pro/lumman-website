@@ -44,8 +44,8 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   }
 
   const handleNewChat = () => {
-    // Открываем внешний сервис Eleven Labs для разговора с Luke
-    window.open("https://elevenlabs.io/chat", "_blank")
+    // Redirect to dashboard page
+    router.push("/dashboard")
     onClose()
   }
 

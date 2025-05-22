@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useChats } from "@/hooks/use-data-fetching"
 import { MessageSquarePlus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { LukeButton } from "@/components/luke-button"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -12,12 +13,6 @@ export default function DashboardPage() {
 
   // Use React Query hooks
   const { data: chatsData, isLoading } = useChats({ limit: 5 })
-
-
-  const handleNewChat = () => {
-    // Открываем внешний сервис Eleven Labs для разговора с Luke
-    window.open("https://elevenlabs.io/chat", "_blank")
-  }
 
   return (
     <div className="container max-w-4xl py-12 md:py-24">
@@ -38,9 +33,7 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">
               Begin a fresh conversation with Luke about your business challenges.
             </p>
-            <Button onClick={handleNewChat}>
-              Talk to Luke
-            </Button>
+            <LukeButton />
           </div>
 
           <div className="bg-muted/50 rounded-lg p-6">

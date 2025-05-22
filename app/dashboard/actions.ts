@@ -5,51 +5,6 @@ import { revalidatePath } from "next/cache"
 // Add the import for handleSupabaseError
 import { handleSupabaseError } from "@/lib/utils"
 
-// Update the createConversation function
-export async function createConversation() {
-  try {
-    const supabase = createServerSupabaseClient()
-
-    // Get the current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
-    if (userError) {
-      throw new Error(handleSupabaseError(userError, "createConversation:getUser", "Authentication failed"))
-    }
-
-    if (!user) {
-      throw new Error("Not authenticated")
-    }
-
-    // Create a new conversation with the correct fields
-    const { data, error } = await supabase
-      .from("chats")
-      .insert({
-        user_id: user.id,
-        chat_name: "New chat",
-        chat_duration: 0,
-        chat_summary: null,
-        chat_transcription: null,
-      })
-      .select("*")
-      .single()
-
-    if (error) {
-      throw new Error(handleSupabaseError(error, "createConversation:insert", "Failed to create conversation"))
-    }
-
-    revalidatePath("/dashboard")
-
-    return { data }
-  } catch (err) {
-    console.error("Error creating conversation:", err)
-    return { error: handleSupabaseError(err, "createConversation", "Failed to create conversation") }
-  }
-}
-
 // Update the deleteConversation function
 export async function deleteConversation(id: string) {
   try {

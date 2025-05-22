@@ -3,10 +3,10 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { cn } from "@/lib/utils"
+import { Menu } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function DashboardLayout({
   children,
@@ -57,9 +57,19 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background transition-colors duration-300 ease-in-out">
-      <Header onMenuToggle={toggleSidebar} isMenuOpen={isSidebarOpen} />
-
       <div className="flex flex-1 relative">
+        {/* Mobile menu toggle button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="fixed top-4 left-4 z-50 md:hidden"
+          onClick={toggleSidebar}
+          data-sidebar-toggle="true"
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle menu</span>
+        </Button>
+        
         {/* Overlay for mobile */}
         {isSidebarOpen && (
           <div
@@ -72,7 +82,7 @@ export default function DashboardLayout({
         {/* Sidebar */}
         <div
           className={cn(
-            "fixed md:sticky top-16 left-0 z-40 w-64 h-[calc(100vh-4rem)]",
+            "fixed md:sticky top-0 left-0 z-40 w-64 h-screen",
             isSidebarOpen ? "block" : "hidden md:block",
           )}
           data-sidebar="true"
@@ -85,8 +95,6 @@ export default function DashboardLayout({
           <div className="container py-6 md:py-10 max-w-full">{children}</div>
         </main>
       </div>
-
-      <Footer />
     </div>
   )
 }
