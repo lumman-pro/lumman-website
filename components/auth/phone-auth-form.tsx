@@ -29,6 +29,7 @@ export function PhoneAuthForm() {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const submitAttemptRef = useRef(false)
   const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Handle OTP expiration timer
   useEffect(() => {
@@ -60,13 +61,19 @@ export function PhoneAuthForm() {
     }
   }, [step, otpExpiry])
   
-  // Cleanup auth subscription on unmount
+  // Cleanup auth subscription and timeout on unmount
   useEffect(() => {
     return () => {
       // Clean up any auth subscription if component unmounts
       if (authSubscriptionRef.current) {
         authSubscriptionRef.current.unsubscribe()
         authSubscriptionRef.current = null
+      }
+      
+      // Clear any auth timeout
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current)
+        authTimeoutRef.current = null
       }
     }
   }, [])
