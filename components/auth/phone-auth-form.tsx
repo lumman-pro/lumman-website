@@ -183,12 +183,6 @@ export function PhoneAuthForm() {
             subscription.unsubscribe()
             authSubscriptionRef.current = null
             
-            // Clear the fallback timeout
-            if (authTimeoutRef.current) {
-              clearTimeout(authTimeoutRef.current)
-              authTimeoutRef.current = null
-            }
-            
             // Reset loading state and redirect
             setIsLoading(false)
             submitAttemptRef.current = false
