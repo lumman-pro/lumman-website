@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useChats, useCreateChat } from "@/hooks/use-data-fetching"
+import { useChats } from "@/hooks/use-data-fetching"
 import { MessageSquarePlus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -12,20 +12,11 @@ export default function DashboardPage() {
 
   // Use React Query hooks
   const { data: chatsData, isLoading } = useChats({ limit: 5 })
-  const createChatMutation = useCreateChat()
 
-  const handleNewChat = async () => {
-    try {
-      const newChat = await createChatMutation.mutateAsync("New Conversation")
-      router.push(`/dashboard/new?chat_id=${newChat.id}`)
-    } catch (error) {
-      console.error("Error creating new chat:", error)
-      toast({
-        title: "Error",
-        description: "Failed to create a new conversation. Please try again.",
-        variant: "destructive",
-      })
-    }
+
+  const handleNewChat = () => {
+    // Открываем внешний сервис Eleven Labs для разговора с Luke
+    window.open("https://elevenlabs.io/chat", "_blank")
   }
 
   return (

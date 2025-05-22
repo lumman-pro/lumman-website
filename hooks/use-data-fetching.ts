@@ -228,47 +228,23 @@ export function useChatMessages(chatId: string) {
   })
 }
 
-// Create new chat mutation
+// Placeholder для совместимости с интерфейсом
+// Не создает записи в базе данных
 export function useCreateChat() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (chatName: string) => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-
-        if (userError) throw userError
-        if (!user) throw new Error("User not authenticated")
-
-        // Create a new chat
-        const { data, error } = await supabase
-          .from("chats")
-          .insert({
-            chat_name: chatName,
-            user_id: user.id,
-            chat_summary: "Your conversation with Luke will appear here soon.",
-          })
-          .select("*")
-          .single()
-
-        if (error) {
-          throw error
-        }
-
-        return data as Chat
-      } catch (err) {
-        console.error("Error creating chat:", err)
-        throw new Error(handleSupabaseError(err, "useCreateChat", "Failed to create chat"))
-      }
-    },
-    onSuccess: () => {
-      // Invalidate the chats query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ["chats"] })
-    },
-  })
+  return {
+    mutateAsync: async () => {
+      console.log("useCreateChat is now a placeholder and doesn't create database records")
+      return {
+        id: "placeholder",
+        chat_name: "Placeholder Chat",
+        created_at: new Date().toISOString(),
+        user_id: "placeholder",
+        chat_summary: null,
+        chat_duration: null,
+        chat_transcription: null
+      } as Chat
+    }
+  }
 }
 
 
