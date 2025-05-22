@@ -60,13 +60,22 @@ export function PhoneAuthForm() {
     }
   }, [step, otpExpiry])
   
-  // Cleanup auth subscription on unmount
+  // Для хранения ссылки на таймаут редиректа
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Cleanup auth subscription and timeout on unmount
   useEffect(() => {
     return () => {
       // Clean up any auth subscription if component unmounts
       if (authSubscriptionRef.current) {
         authSubscriptionRef.current.unsubscribe()
         authSubscriptionRef.current = null
+      }
+      
+      // Clean up auth timeout if it exists
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current)
+        authTimeoutRef.current = null
       }
     }
   }, [])
@@ -158,35 +167,61 @@ export function PhoneAuthForm() {
           description: "You have been successfully signed in.",
         })
 
-        // Поскольку у нас уже есть данные пользователя и сессии из ответа verifyOtp,
-        // мы можем сразу перенаправить пользователя без ожидания события SIGNED_IN
-        console.log("Authentication successful, redirecting to:", redirectTo)
+        // Мы должны дождаться события INITIAL_SESSION перед редиректом
+        console.log("Authentication successful, waiting for session initialization before redirecting")
         
-        // Для надежности, также установим слушатель события onAuthStateChange,
-        // но не будем блокировать UI в ожидании этого события
+        // Оставляем индикатор загрузки активным, пока сессия не будет полностью установлена
+        setIsLoading(true)
+        
+        // Устанавливаем слушатель события onAuthStateChange для отслеживания состояния сессии
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
           console.log("Auth state changed:", event, "Session exists:", !!session)
           
-          if (event === 'SIGNED_IN' && session?.user) {
-            console.log("Session fully established with event:", event)
+          // Редирект после получения события INITIAL_SESSION или SIGNED_IN
+          if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user) {
+            console.log("Session initialized with event:", event, "redirecting to:", redirectTo)
             
             // Clean up the subscription
             subscription.unsubscribe()
             authSubscriptionRef.current = null
+            
+            // Clear the timeout
+            if (authTimeoutRef.current) {
+              clearTimeout(authTimeoutRef.current)
+              authTimeoutRef.current = null
+            }
+            
+            // Reset loading state
+            setIsLoading(false)
+            submitAttemptRef.current = false
+            
+            // Redirect to the dashboard or specified redirect URL
+            router.push(redirectTo)
           }
         })
         
         // Store the subscription reference for cleanup if component unmounts
         authSubscriptionRef.current = subscription
         
-        // Reset loading state
-        setIsLoading(false)
-        submitAttemptRef.current = false
-        
-        // Redirect to the dashboard or specified redirect URL immediately
-        router.push(redirectTo)
+        // Добавляем таймаут на случай, если события не придут в течение разумного времени
+        authTimeoutRef.current = setTimeout(() => {
+          console.log("Session initialization timeout reached, redirecting anyway")
+          
+          // Clean up the subscription if it exists
+          if (authSubscriptionRef.current) {
+            authSubscriptionRef.current.unsubscribe()
+            authSubscriptionRef.current = null
+          }
+          
+          // Reset loading state
+          setIsLoading(false)
+          submitAttemptRef.current = false
+          
+          // Redirect to the dashboard or specified redirect URL
+          router.push(redirectTo)
+        }, 5000) // 5 секунд таймаут
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.")
