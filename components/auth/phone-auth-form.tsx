@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase/client"
+import { AuthChangeEvent, Session } from "@supabase/supabase-js"
 
 export function PhoneAuthForm() {
   const router = useRouter()
@@ -26,6 +28,7 @@ export function PhoneAuthForm() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const submitAttemptRef = useRef(false)
+  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
 
   // Handle OTP expiration timer
   useEffect(() => {
@@ -56,6 +59,17 @@ export function PhoneAuthForm() {
       }
     }
   }, [step, otpExpiry])
+  
+  // Cleanup auth subscription on unmount
+  useEffect(() => {
+    return () => {
+      // Clean up any auth subscription if component unmounts
+      if (authSubscriptionRef.current) {
+        authSubscriptionRef.current.unsubscribe()
+        authSubscriptionRef.current = null
+      }
+    }
+  }, [])
 
   // Format time remaining
   const formatTimeRemaining = () => {
@@ -144,13 +158,47 @@ export function PhoneAuthForm() {
           description: "You have been successfully signed in.",
         })
 
-        // Перенаправляем пользователя
-        router.push(redirectTo)
+        // Instead of immediately redirecting, we'll set up a listener for auth state change
+        // The redirect will happen only after Supabase has fully initialized the session
+        setIsLoading(true) // Keep loading state active until redirect happens
+        
+        // Set up a one-time auth state change listener
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("Auth state changed:", event, "Session exists:", !!session)
+          
+          if (event === 'SIGNED_IN' && session?.user) {
+            // Now we have confirmation that the session is fully established
+            console.log("Session fully established, redirecting to:", redirectTo)
+            
+            // Clean up the subscription
+            subscription.unsubscribe()
+            authSubscriptionRef.current = null
+            
+            // Clear the fallback timeout
+            if (authTimeoutRef.current) {
+              clearTimeout(authTimeoutRef.current)
+              authTimeoutRef.current = null
+            }
+            
+            // Reset loading state and redirect
+            setIsLoading(false)
+            submitAttemptRef.current = false
+            
+            // Redirect to the dashboard or specified redirect URL
+            router.push(redirectTo)
+          }
+        })
+        
+        // Store the subscription reference for cleanup if component unmounts
+        authSubscriptionRef.current = subscription
+        // We're relying solely on the onAuthStateChange listener for redirection
+        // No setTimeout fallback is needed as per requirements
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.")
       console.error(err)
-    } finally {
       setIsLoading(false)
       submitAttemptRef.current = false
     }
