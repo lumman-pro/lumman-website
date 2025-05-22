@@ -36,7 +36,7 @@ export function PhoneAuthForm() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const submitAttemptRef = useRef(false);
   const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
-  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle OTP expiration timer
   useEffect(() => {
@@ -76,11 +76,11 @@ export function PhoneAuthForm() {
         authSubscriptionRef.current.unsubscribe();
         authSubscriptionRef.current = null;
       }
-      
+
       // Clear any auth timeout
       if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current)
-        authTimeoutRef.current = null
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = null;
       }
     };
   }, []);
