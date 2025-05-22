@@ -7,7 +7,7 @@ import { signOut } from "@/lib/supabase/auth"
 import { MessageSquarePlus, User, LogOut } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { useUserData, useChats } from "@/hooks/use-data-fetching"
+import { useUserData, useChats, useCreateChat } from "@/hooks/use-data-fetching"
 
 interface SidebarNavigationProps {
   isOpen: boolean
@@ -43,16 +43,20 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
     }
   }
 
-  const handleNewChat = () => {
-    // Show a toast message explaining that chat creation is now handled externally
-    toast({
-      title: "External Chat Creation",
-      description: "New chats are now created through the external system.",
-    })
-    
-    // In a real implementation, this would redirect to an external system
-    window.open("https://lumman.ai/new-chat", "_blank")
-    onClose()
+  const handleNewChat = async () => {
+    try {
+      const { mutateAsync } = useCreateChat()
+      const newChat = await mutateAsync("New Conversation")
+      router.push(`/dashboard/new?chat_id=${newChat.id}`)
+      onClose()
+    } catch (error) {
+      console.error("Error creating new chat:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create a new conversation. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleChatSelect = (id: string) => {

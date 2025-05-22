@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useChats } from "@/hooks/use-data-fetching"
-import { MessageSquarePlus, ExternalLink } from "lucide-react"
+import { useChats, useCreateChat } from "@/hooks/use-data-fetching"
+import { MessageSquarePlus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function DashboardPage() {
@@ -12,17 +12,20 @@ export default function DashboardPage() {
 
   // Use React Query hooks
   const { data: chatsData, isLoading } = useChats({ limit: 5 })
+  const createChatMutation = useCreateChat()
 
-  const handleNewChatRedirect = () => {
-    // Show a toast message explaining that chat creation is now handled externally
-    toast({
-      title: "External Chat Creation",
-      description: "New chats are now created through the external system.",
-    })
-    
-    // In a real implementation, this would redirect to an external system
-    // For now, we'll just show a message
-    window.open("https://lumman.ai/new-chat", "_blank")
+  const handleNewChat = async () => {
+    try {
+      const newChat = await createChatMutation.mutateAsync("New Conversation")
+      router.push(`/dashboard/new?chat_id=${newChat.id}`)
+    } catch (error) {
+      console.error("Error creating new chat:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create a new conversation. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -33,7 +36,7 @@ export default function DashboardPage() {
             Dashboard
           </h1>
           <p className="text-muted-foreground text-base font-medium transition-colors duration-300 ease-in-out">
-            View your conversations with Luke or start a new one through our external system.
+            View your conversations with Luke or start a new one.
           </p>
         </div>
 
@@ -44,9 +47,8 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">
               Begin a fresh conversation with Luke about your business challenges.
             </p>
-            <Button onClick={handleNewChatRedirect}>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Start in External System
+            <Button onClick={handleNewChat}>
+              Talk to Luke
             </Button>
           </div>
 

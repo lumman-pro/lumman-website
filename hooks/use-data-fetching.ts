@@ -228,24 +228,46 @@ export function useChatMessages(chatId: string) {
   })
 }
 
-// Create new chat mutation - now just a placeholder that returns a dummy chat ID
-// The actual chat creation is handled by an external system
+// Create new chat mutation
 export function useCreateChat() {
+  const queryClient = useQueryClient()
+
   return useMutation({
-    mutationFn: async (_chatName: string) => {
-      // This is a placeholder function that simulates the creation of a chat
-      // In reality, the chat will be created by an external system
-      // We just return a dummy chat ID to maintain compatibility with the UI
-      return {
-        id: "new-chat-placeholder",
-        chat_name: "New Chat",
-        created_at: new Date().toISOString(),
-        user_id: "placeholder",
-        chat_summary: "Your conversation with Luke will appear here soon.",
-        chat_duration: null,
-        chat_transcription: null
-      } as Chat
-    }
+    mutationFn: async (chatName: string) => {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+
+        if (userError) throw userError
+        if (!user) throw new Error("User not authenticated")
+
+        // Create a new chat
+        const { data, error } = await supabase
+          .from("chats")
+          .insert({
+            chat_name: chatName,
+            user_id: user.id,
+            chat_summary: "Your conversation with Luke will appear here soon.",
+          })
+          .select("*")
+          .single()
+
+        if (error) {
+          throw error
+        }
+
+        return data as Chat
+      } catch (err) {
+        console.error("Error creating chat:", err)
+        throw new Error(handleSupabaseError(err, "useCreateChat", "Failed to create chat"))
+      }
+    },
+    onSuccess: () => {
+      // Invalidate the chats query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["chats"] })
+    },
   })
 }
 
