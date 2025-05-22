@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase/client"
+import { AuthChangeEvent, Session } from "@supabase/supabase-js"
 
 export function PhoneAuthForm() {
   const router = useRouter()
@@ -26,6 +28,7 @@ export function PhoneAuthForm() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const submitAttemptRef = useRef(false)
+  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
 
   // Handle OTP expiration timer
   useEffect(() => {
@@ -56,6 +59,17 @@ export function PhoneAuthForm() {
       }
     }
   }, [step, otpExpiry])
+  
+  // Cleanup auth subscription on unmount
+  useEffect(() => {
+    return () => {
+      // Clean up any auth subscription if component unmounts
+      if (authSubscriptionRef.current) {
+        authSubscriptionRef.current.unsubscribe()
+        authSubscriptionRef.current = null
+      }
+    }
+  }, [])
 
   // Format time remaining
   const formatTimeRemaining = () => {
@@ -144,13 +158,39 @@ export function PhoneAuthForm() {
           description: "You have been successfully signed in.",
         })
 
-        // Перенаправляем пользователя
+        // Поскольку у нас уже есть данные пользователя и сессии из ответа verifyOtp,
+        // мы можем сразу перенаправить пользователя без ожидания события SIGNED_IN
+        console.log("Authentication successful, redirecting to:", redirectTo)
+        
+        // Для надежности, также установим слушатель события onAuthStateChange,
+        // но не будем блокировать UI в ожидании этого события
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log("Auth state changed:", event, "Session exists:", !!session)
+          
+          if (event === 'SIGNED_IN' && session?.user) {
+            console.log("Session fully established with event:", event)
+            
+            // Clean up the subscription
+            subscription.unsubscribe()
+            authSubscriptionRef.current = null
+          }
+        })
+        
+        // Store the subscription reference for cleanup if component unmounts
+        authSubscriptionRef.current = subscription
+        
+        // Reset loading state
+        setIsLoading(false)
+        submitAttemptRef.current = false
+        
+        // Redirect to the dashboard or specified redirect URL immediately
         router.push(redirectTo)
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.")
       console.error(err)
-    } finally {
       setIsLoading(false)
       submitAttemptRef.current = false
     }
