@@ -46,19 +46,38 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   const fetchConversations = async () => {
     try {
       setIsLoading(true)
+
+      // Check if user is authenticated first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        console.error("Error checking session:", sessionError)
+        setConversations([])
+        return
+      }
+
+      // If no session exists, set empty conversations and return early
+      if (!sessionData.session) {
+        setConversations([])
+        return
+      }
+
+      // Only proceed with fetching conversations if user is authenticated
       const { data, error } = await supabase
         .from("chats")
         .select("id, chat_name, created_at")
-        // Removed the deleted filter since the column no longer exists
         .order("created_at", { ascending: false })
 
       if (error) {
-        throw error
+        console.error("Error fetching conversations:", error)
+        setConversations([])
+        return
       }
 
       setConversations(data || [])
     } catch (err) {
       console.error("Error fetching conversations:", err)
+      setConversations([])
     } finally {
       setIsLoading(false)
     }

@@ -110,7 +110,6 @@ export interface Database {
           chat_name: string | null
           chat_summary: string | null
           chat_transcription: string | null
-          // Removed the deleted field
         }
         Insert: {
           id?: string
@@ -120,7 +119,6 @@ export interface Database {
           chat_name?: string | null
           chat_summary?: string | null
           chat_transcription?: string | null
-          // Removed the deleted field
         }
         Update: {
           id?: string
@@ -130,7 +128,6 @@ export interface Database {
           chat_name?: string | null
           chat_summary?: string | null
           chat_transcription?: string | null
-          // Removed the deleted field
         }
       }
       user_profiles: {

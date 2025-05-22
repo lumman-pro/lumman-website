@@ -136,7 +136,66 @@ export function useUserProfile() {
     profile,
     isLoading,
     error,
-    fetchUserProfile: async () => {}, // Placeholder to maintain API
+    fetchUserProfile: async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        // Get current user
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+
+        if (userError) throw userError
+
+        if (!user) {
+          setIsLoading(false)
+          return null
+        }
+
+        // Check if user profile exists
+        const { data: existingProfile, error: fetchError } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single()
+
+        if (fetchError && fetchError.code !== "PGRST116") {
+          // PGRST116 is "no rows returned" error
+          throw fetchError
+        }
+
+        if (existingProfile) {
+          setProfile(existingProfile)
+        } else {
+          // Create a new profile if one doesn't exist
+          const { data: newProfile, error: insertError } = await supabase
+            .from("user_profiles")
+            .insert({
+              user_id: user.id,
+              user_name: user.phone || null,
+              user_email: user.email || null,
+            })
+            .select("*")
+            .single()
+
+          if (insertError) {
+            throw insertError
+          }
+
+          setProfile(newProfile)
+        }
+
+        return true
+      } catch (err) {
+        console.error("Error fetching user profile:", err)
+        setError(err instanceof Error ? err.message : "Failed to load user profile")
+        return false
+      } finally {
+        setIsLoading(false)
+      }
+    },
     updateProfile,
   }
 }

@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/client"
+import { createServerSupabaseClient } from "@/lib/supabase/server-client"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function GET(request: NextRequest) {

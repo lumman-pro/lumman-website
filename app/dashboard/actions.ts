@@ -1,6 +1,6 @@
 "use server"
 
-import { createServerSupabaseClient } from "@/lib/supabase/client"
+import { createServerSupabaseClient } from "@/lib/supabase/server-client"
 import { revalidatePath } from "next/cache"
 
 export async function createConversation() {
