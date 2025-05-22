@@ -1,250 +1,269 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { signInWithPhone, verifyOtp } from "@/lib/supabase/auth"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
-import { toast } from "sonner"
-import { supabase } from "@/lib/supabase/client"
-import { AuthChangeEvent, Session } from "@supabase/supabase-js"
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signInWithPhone, verifyOtp } from "@/lib/supabase/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase/client";
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 export function PhoneAuthForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams?.get("redirect") || "/dashboard"
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams?.get("redirect") || "/dashboard";
 
-  const [phone, setPhone] = useState("")
-  const [otp, setOtp] = useState("")
-  const [step, setStep] = useState<"phone" | "otp">("phone")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [otpExpiry, setOtpExpiry] = useState<number | null>(null)
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const submitAttemptRef = useRef(false)
-  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
-  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [otpExpiry, setOtpExpiry] = useState<number | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const submitAttemptRef = useRef(false);
+  const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle OTP expiration timer
   useEffect(() => {
     if (step === "otp" && otpExpiry) {
       const updateTimer = () => {
-        const now = Date.now()
-        const remaining = Math.max(0, Math.floor((otpExpiry - now) / 1000))
+        const now = Date.now();
+        const remaining = Math.max(0, Math.floor((otpExpiry - now) / 1000));
 
-        setTimeRemaining(remaining)
+        setTimeRemaining(remaining);
 
         if (remaining <= 0) {
           if (timerRef.current) {
-            clearInterval(timerRef.current)
-            timerRef.current = null
+            clearInterval(timerRef.current);
+            timerRef.current = null;
           }
-          setError("Verification code has expired. Please request a new one.")
+          setError("Verification code has expired. Please request a new one.");
         }
-      }
+      };
 
-      updateTimer()
-      timerRef.current = setInterval(updateTimer, 1000)
+      updateTimer();
+      timerRef.current = setInterval(updateTimer, 1000);
 
       return () => {
         if (timerRef.current) {
-          clearInterval(timerRef.current)
-          timerRef.current = null
+          clearInterval(timerRef.current);
+          timerRef.current = null;
         }
-      }
+      };
     }
-  }, [step, otpExpiry])
-  
+  }, [step, otpExpiry]);
+
   // Cleanup auth subscription and timeout on unmount
   useEffect(() => {
     return () => {
       // Clean up any auth subscription if component unmounts
       if (authSubscriptionRef.current) {
-        authSubscriptionRef.current.unsubscribe()
-        authSubscriptionRef.current = null
+        authSubscriptionRef.current.unsubscribe();
+        authSubscriptionRef.current = null;
       }
-      
+
       // Clear any auth timeout
       if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current)
-        authTimeoutRef.current = null
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Format time remaining
   const formatTimeRemaining = () => {
-    if (timeRemaining === null) return ""
-    const minutes = Math.floor(timeRemaining / 60)
-    const seconds = timeRemaining % 60
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
+    if (timeRemaining === null) return "";
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Prevent multiple submission attempts
-    if (isLoading || submitAttemptRef.current) return
-    submitAttemptRef.current = true
+    if (isLoading || submitAttemptRef.current) return;
+    submitAttemptRef.current = true;
 
-    setError(null)
-    setIsLoading(true)
+    setError(null);
+    setIsLoading(true);
 
     try {
       // Validate phone number format
-      const phoneRegex = /^\+[1-9]\d{1,14}$/
+      const phoneRegex = /^\+[1-9]\d{1,14}$/;
       if (!phoneRegex.test(phone)) {
-        setError("Please enter a valid phone number including country code (e.g., +1234567890)")
-        setIsLoading(false)
-        submitAttemptRef.current = false
-        return
+        setError(
+          "Please enter a valid phone number including country code (e.g., +1234567890)",
+        );
+        setIsLoading(false);
+        submitAttemptRef.current = false;
+        return;
       }
 
-      const { error } = await signInWithPhone(phone)
+      const { error } = await signInWithPhone(phone);
 
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else {
         // Set OTP expiry time (5 minutes from now)
-        const expiryTime = Date.now() + 5 * 60 * 1000
-        setOtpExpiry(expiryTime)
-        setStep("otp")
+        const expiryTime = Date.now() + 5 * 60 * 1000;
+        setOtpExpiry(expiryTime);
+        setStep("otp");
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.")
-      console.error(err)
+      setError("An unexpected error occurred. Please try again.");
+      console.error(err);
     } finally {
-      setIsLoading(false)
-      submitAttemptRef.current = false
+      setIsLoading(false);
+      submitAttemptRef.current = false;
     }
-  }
+  };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Prevent multiple submission attempts
-    if (isLoading || submitAttemptRef.current) return
-    submitAttemptRef.current = true
+    if (isLoading || submitAttemptRef.current) return;
+    submitAttemptRef.current = true;
 
-    setError(null)
-    setIsLoading(true)
+    setError(null);
+    setIsLoading(true);
 
     try {
       // Check if OTP has expired
       if (otpExpiry && Date.now() > otpExpiry) {
-        setError("Verification code has expired. Please request a new one.")
-        setIsLoading(false)
-        submitAttemptRef.current = false
-        return
+        setError("Verification code has expired. Please request a new one.");
+        setIsLoading(false);
+        submitAttemptRef.current = false;
+        return;
       }
 
-      const { data, error } = await verifyOtp(phone, otp)
+      const { data, error } = await verifyOtp(phone, otp);
 
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else if (!data?.user || !data?.session) {
         // Проверяем наличие данных пользователя и сессии
-        console.error("Authentication successful but no user data returned")
-        setError("Authentication failed: Unable to retrieve user data. Please try again.")
+        console.error("Authentication successful but no user data returned");
+        setError(
+          "Authentication failed: Unable to retrieve user data. Please try again.",
+        );
       } else {
         // Clear any timers
         if (timerRef.current) {
-          clearInterval(timerRef.current)
-          timerRef.current = null
+          clearInterval(timerRef.current);
+          timerRef.current = null;
         }
 
         // Показываем уведомление об успешной аутентификации
         toast({
           title: "Authentication successful",
           description: "You have been successfully signed in.",
-        })
+        });
 
         // Instead of immediately redirecting, we'll set up a listener for auth state change
         // The redirect will happen only after Supabase has fully initialized the session
-        setIsLoading(true) // Keep loading state active until redirect happens
-        
+        setIsLoading(true); // Keep loading state active until redirect happens
+
         // Set up a one-time auth state change listener
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
-          console.log("Auth state changed:", event, "Session exists:", !!session)
-          
-          if (event === 'SIGNED_IN' && session?.user) {
+          console.log(
+            "Auth state changed:",
+            event,
+            "Session exists:",
+            !!session,
+          );
+
+          if (event === "SIGNED_IN" && session?.user) {
             // Now we have confirmation that the session is fully established
-            console.log("Session fully established, redirecting to:", redirectTo)
-            
+            console.log(
+              "Session fully established, redirecting to:",
+              redirectTo,
+            );
+
             // Clean up the subscription
-            subscription.unsubscribe()
-            authSubscriptionRef.current = null
-            
+            subscription.unsubscribe();
+            authSubscriptionRef.current = null;
+
             // Clear the fallback timeout
             if (authTimeoutRef.current) {
-              clearTimeout(authTimeoutRef.current)
-              authTimeoutRef.current = null
+              clearTimeout(authTimeoutRef.current);
+              authTimeoutRef.current = null;
             }
-            
+
             // Reset loading state and redirect
-            setIsLoading(false)
-            submitAttemptRef.current = false
-            
+            setIsLoading(false);
+            submitAttemptRef.current = false;
+
             // Redirect to the dashboard or specified redirect URL
-            router.push(redirectTo)
+            router.push(redirectTo);
           }
-        })
-        
+        });
+
         // Store the subscription reference for cleanup if component unmounts
-        authSubscriptionRef.current = subscription
+        authSubscriptionRef.current = subscription;
         // We're relying solely on the onAuthStateChange listener for redirection
         // No setTimeout fallback is needed as per requirements
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.")
-      console.error(err)
-      setIsLoading(false)
-      submitAttemptRef.current = false
+      setError("An unexpected error occurred. Please try again.");
+      console.error(err);
+      setIsLoading(false);
+      submitAttemptRef.current = false;
     }
-  }
+  };
 
   const handleResendOtp = async () => {
     // Prevent multiple submission attempts
-    if (isLoading || submitAttemptRef.current) return
-    submitAttemptRef.current = true
+    if (isLoading || submitAttemptRef.current) return;
+    submitAttemptRef.current = true;
 
-    setError(null)
-    setIsLoading(true)
-    setOtp("")
+    setError(null);
+    setIsLoading(true);
+    setOtp("");
 
     try {
-      const { error } = await signInWithPhone(phone)
+      const { error } = await signInWithPhone(phone);
 
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else {
         // Reset OTP expiry time (5 minutes from now)
-        const expiryTime = Date.now() + 5 * 60 * 1000
-        setOtpExpiry(expiryTime)
-        setError(null)
+        const expiryTime = Date.now() + 5 * 60 * 1000;
+        setOtpExpiry(expiryTime);
+        setError(null);
 
         // Show success message
         toast({
           title: "Verification code sent",
           description: "A new verification code has been sent to your phone.",
-        })
+        });
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.")
-      console.error(err)
+      setError("An unexpected error occurred. Please try again.");
+      console.error(err);
     } finally {
-      setIsLoading(false)
-      submitAttemptRef.current = false
+      setIsLoading(false);
+      submitAttemptRef.current = false;
     }
-  }
+  };
 
   return (
     <Card className="w-full max-w-md">
@@ -257,7 +276,11 @@ export function PhoneAuthForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {error && <div className="mb-4 p-3 text-sm bg-destructive/10 text-destructive rounded-md">{error}</div>}
+        {error && (
+          <div className="mb-4 p-3 text-sm bg-destructive/10 text-destructive rounded-md">
+            {error}
+          </div>
+        )}
 
         {step === "phone" ? (
           <form onSubmit={handleSendOtp} className="space-y-4">
@@ -290,7 +313,9 @@ export function PhoneAuthForm() {
               <div className="flex justify-between items-center">
                 <Label htmlFor="otp">Enter the code</Label>
                 {timeRemaining !== null && timeRemaining > 0 && (
-                  <span className="text-xs text-muted-foreground">Expires in {formatTimeRemaining()}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Expires in {formatTimeRemaining()}
+                  </span>
                 )}
               </div>
               <Input
@@ -325,12 +350,12 @@ export function PhoneAuthForm() {
             <Button
               variant="ghost"
               onClick={() => {
-                setStep("phone")
-                setOtp("")
-                setError(null)
+                setStep("phone");
+                setOtp("");
+                setError(null);
                 if (timerRef.current) {
-                  clearInterval(timerRef.current)
-                  timerRef.current = null
+                  clearInterval(timerRef.current);
+                  timerRef.current = null;
                 }
               }}
               disabled={isLoading}
@@ -342,7 +367,9 @@ export function PhoneAuthForm() {
             <Button
               variant="link"
               onClick={handleResendOtp}
-              disabled={isLoading || (timeRemaining !== null && timeRemaining > 0)}
+              disabled={
+                isLoading || (timeRemaining !== null && timeRemaining > 0)
+              }
               className="text-sm"
             >
               Didn't receive a code? Resend
@@ -351,5 +378,5 @@ export function PhoneAuthForm() {
         )}
       </CardFooter>
     </Card>
-  )
+  );
 }
