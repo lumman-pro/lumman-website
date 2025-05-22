@@ -1,38 +1,38 @@
-import type { Metadata } from "next"
-import { notFound } from "next/navigation"
+"use client"
+
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { getPostBySlug } from "@/lib/insights"
+import { useInsightBySlug } from "@/hooks/use-data-fetching"
 import { formatDate } from "@/lib/utils"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
+import { PostSkeleton } from "@/components/insights/post-skeleton"
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string }
-}): Promise<Metadata> {
-  const post = await getPostBySlug(params.slug)
+export default function PostPage() {
+  const params = useParams()
+  const router = useRouter()
+  const slug = params?.slug as string
 
-  if (!post) {
-    return {
-      title: "Post Not Found | Lumman.ai",
-    }
+  // Use React Query hook
+  const { data: post, isLoading, error } = useInsightBySlug(slug)
+
+  // If post not found after loading, redirect to 404
+  if (!isLoading && !post) {
+    router.push("/404")
+    return null
   }
 
-  return {
-    title: `${post.title} | Lumman.ai`,
-    description: post.excerpt || undefined,
+  if (isLoading) {
+    return <PostSkeleton />
   }
-}
 
-export default async function PostPage({
-  params,
-}: {
-  params: { slug: string }
-}) {
-  const post = await getPostBySlug(params.slug)
-
-  if (!post) {
-    notFound()
+  if (error) {
+    return (
+      <div className="container max-w-3xl py-12 md:py-24">
+        <div className="text-destructive text-center">
+          {error instanceof Error ? error.message : "Failed to load post"}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -82,7 +82,7 @@ export default async function PostPage({
           </div>
         )}
 
-        <MarkdownRenderer content={post.content} />
+        <MarkdownRenderer content={post.content} contentHtml={post.content_html} useHtml={!!post.content_html} />
 
         {post.author && (
           <div className="border-t border-border pt-8 mt-12">

@@ -1,5 +1,9 @@
 import { createServerSupabaseClient } from "./supabase/server-client"
+import { getServerSession } from "./supabase/server-auth"
 import type { Database } from "./supabase/database.types"
+
+// Add the import for handleSupabaseError
+import { handleSupabaseError } from "./utils"
 
 export type Post = Database["public"]["Tables"]["insights_posts"]["Row"] & {
   author?: Database["public"]["Tables"]["insights_authors"]["Row"] | null
@@ -8,7 +12,7 @@ export type Post = Database["public"]["Tables"]["insights_posts"]["Row"] & {
 
 export type Category = Database["public"]["Tables"]["insights_categories"]["Row"]
 
-// Optimized getPosts function to reduce sequential queries
+// Update the getPosts function
 export async function getPosts({
   limit = 10,
   offset = 0,
@@ -23,6 +27,10 @@ export async function getPosts({
   try {
     const supabase = createServerSupabaseClient()
 
+    // Check if user is authenticated (for admin access to unpublished posts)
+    const session = await getServerSession()
+    const isAuthenticated = !!session?.user
+
     // If filtering by category, get the category ID first
     let categoryId: string | null = null
     if (categorySlug) {
@@ -34,7 +42,7 @@ export async function getPosts({
 
       if (categoryError) {
         console.error("Error fetching category:", categoryError)
-        return { posts: [], count: 0 }
+        throw new Error(handleSupabaseError(categoryError, "getPosts:fetchCategory", "Category not found"))
       }
 
       categoryId = category?.id || null
@@ -48,8 +56,9 @@ export async function getPosts({
     // Build the query for posts with authors
     let query = supabase.from("insights_posts").select("*, author:insights_authors(*)", { count: "exact" })
 
-    // Apply filters
-    if (!includeUnpublished) {
+    // Apply published filter based on authentication status
+    // RLS will handle this automatically, but we're being explicit for clarity
+    if (!isAuthenticated || !includeUnpublished) {
       query = query.eq("is_published", true)
     }
 
@@ -63,7 +72,9 @@ export async function getPosts({
 
       if (relationsError) {
         console.error("Error fetching post relations:", relationsError)
-        return { posts: [], count: 0 }
+        throw new Error(
+          handleSupabaseError(relationsError, "getPosts:fetchPostRelations", "Failed to load category posts"),
+        )
       }
 
       // If no posts in this category, return empty result
@@ -85,7 +96,7 @@ export async function getPosts({
 
     if (postsError) {
       console.error("Error fetching posts:", postsError)
-      return { posts: [], count: 0 }
+      throw new Error(handleSupabaseError(postsError, "getPosts:fetchPosts", "Failed to load posts"))
     }
 
     // If no posts, return early
@@ -134,11 +145,12 @@ export async function getPosts({
     }
   } catch (error) {
     console.error("Error in getPosts:", error)
+    // Return empty array instead of throwing to prevent page crashes
     return { posts: [], count: 0 }
   }
 }
 
-// Optimize the getCategories function with better error handling
+// Update the getCategories function
 export async function getCategories(): Promise<Category[]> {
   try {
     const supabase = createServerSupabaseClient()
@@ -147,7 +159,7 @@ export async function getCategories(): Promise<Category[]> {
 
     if (error) {
       console.error("Error fetching categories:", error)
-      throw error
+      throw new Error(handleSupabaseError(error, "getCategories", "Failed to load categories"))
     }
 
     return categories || []
@@ -158,19 +170,36 @@ export async function getCategories(): Promise<Category[]> {
   }
 }
 
-// Optimize the getPostBySlug function to reduce sequential queries
+// Update the getPostBySlug function
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
     const supabase = createServerSupabaseClient()
 
-    const { data: post, error } = await supabase
-      .from("insights_posts")
-      .select("*, author:insights_authors(*)")
-      .eq("slug", slug)
-      .single()
+    // Check if user is authenticated (for admin access to unpublished posts)
+    const session = await getServerSession()
+    const isAuthenticated = !!session?.user
 
-    if (error || !post) {
+    // Build query
+    let query = supabase.from("insights_posts").select("*, author:insights_authors(*)").eq("slug", slug)
+
+    // For non-authenticated users, only show published posts
+    // RLS will handle this automatically, but we're being explicit for clarity
+    if (!isAuthenticated) {
+      query = query.eq("is_published", true)
+    }
+
+    const { data: post, error } = await query.single()
+
+    if (error) {
       console.error("Error fetching post:", error)
+      if (error.code === "PGRST116") {
+        // No rows returned - post not found or not published
+        return null
+      }
+      throw new Error(handleSupabaseError(error, "getPostBySlug:fetchPost", "Failed to load post"))
+    }
+
+    if (!post) {
       return null
     }
 

@@ -2,60 +2,176 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server-client"
 import { revalidatePath } from "next/cache"
+// Add the import for handleSupabaseError
+import { handleSupabaseError } from "@/lib/utils"
 
+// Update the createConversation function
 export async function createConversation() {
-  const supabase = createServerSupabaseClient()
+  try {
+    const supabase = createServerSupabaseClient()
 
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: "Not authenticated" }
+    if (userError) {
+      throw new Error(handleSupabaseError(userError, "createConversation:getUser", "Authentication failed"))
+    }
+
+    if (!user) {
+      throw new Error("Not authenticated")
+    }
+
+    // Create a new conversation with the correct fields
+    const { data, error } = await supabase
+      .from("chats")
+      .insert({
+        user_id: user.id,
+        chat_name: "New chat",
+        chat_duration: 0,
+        chat_summary: null,
+        chat_transcription: null,
+      })
+      .select("*")
+      .single()
+
+    if (error) {
+      throw new Error(handleSupabaseError(error, "createConversation:insert", "Failed to create conversation"))
+    }
+
+    revalidatePath("/dashboard")
+
+    return { data }
+  } catch (err) {
+    console.error("Error creating conversation:", err)
+    return { error: handleSupabaseError(err, "createConversation", "Failed to create conversation") }
   }
-
-  // Create a new conversation
-  const { data, error } = await supabase
-    .from("chats")
-    .insert({
-      user_id: user.id,
-      title: "New chat",
-    })
-    .select("*")
-    .single()
-
-  if (error) {
-    console.error("Error creating conversation:", error)
-    return { error: error.message }
-  }
-
-  revalidatePath("/dashboard")
-
-  return { data }
 }
 
+// Update the deleteConversation function
 export async function deleteConversation(id: string) {
-  const supabase = createServerSupabaseClient()
+  try {
+    const supabase = createServerSupabaseClient()
 
-  // Get the current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: "Not authenticated" }
+    if (userError) {
+      throw new Error(handleSupabaseError(userError, "deleteConversation:getUser", "Authentication failed"))
+    }
+
+    if (!user) {
+      throw new Error("Not authenticated")
+    }
+
+    // First, verify the user owns this conversation
+    const { data: chat, error: chatError } = await supabase
+      .from("chats")
+      .select("user_id")
+      .eq("id", id)
+      .eq("user_id", user.id) // Explicitly filter by user_id for RLS
+      .single()
+
+    if (chatError) {
+      if (chatError.code === "PGRST116") {
+        throw new Error("Conversation not found or you don't have permission to delete it")
+      }
+      throw new Error(
+        handleSupabaseError(chatError, "deleteConversation:fetchChat", "Failed to verify conversation ownership"),
+      )
+    }
+
+    if (chat.user_id !== user.id) {
+      throw new Error("You don't have permission to delete this conversation")
+    }
+
+    // Delete the conversation
+    const { error } = await supabase.from("chats").delete().eq("id", id).eq("user_id", user.id)
+
+    if (error) {
+      throw new Error(handleSupabaseError(error, "deleteConversation:delete", "Failed to delete conversation"))
+    }
+
+    revalidatePath("/dashboard")
+
+    return { success: true }
+  } catch (err) {
+    console.error("Error deleting conversation:", err)
+    return { error: handleSupabaseError(err, "deleteConversation", "Failed to delete conversation") }
   }
+}
 
-  // Delete the conversation
-  const { error } = await supabase.from("chats").delete().eq("id", id).eq("user_id", user.id)
+// Update the updateConversation function
+export async function updateConversation(
+  id: string,
+  updates: {
+    chat_name?: string
+    chat_summary?: string | null
+    chat_transcription?: string | null
+    chat_duration?: number | null
+  },
+) {
+  try {
+    const supabase = createServerSupabaseClient()
 
-  if (error) {
-    console.error("Error deleting conversation:", error)
-    return { error: error.message }
+    // Get the current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError) {
+      throw new Error(handleSupabaseError(userError, "updateConversation:getUser", "Authentication failed"))
+    }
+
+    if (!user) {
+      throw new Error("Not authenticated")
+    }
+
+    // First, verify the user owns this conversation
+    const { data: chat, error: chatError } = await supabase
+      .from("chats")
+      .select("user_id")
+      .eq("id", id)
+      .eq("user_id", user.id) // Explicitly filter by user_id for RLS
+      .single()
+
+    if (chatError) {
+      if (chatError.code === "PGRST116") {
+        throw new Error("Conversation not found or you don't have permission to update it")
+      }
+      throw new Error(
+        handleSupabaseError(chatError, "updateConversation:fetchChat", "Failed to verify conversation ownership"),
+      )
+    }
+
+    if (chat.user_id !== user.id) {
+      throw new Error("You don't have permission to update this conversation")
+    }
+
+    // Update the conversation
+    const { data, error } = await supabase
+      .from("chats")
+      .update(updates)
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select("*")
+      .single()
+
+    if (error) {
+      throw new Error(handleSupabaseError(error, "updateConversation:update", "Failed to update conversation"))
+    }
+
+    revalidatePath(`/dashboard/chat/${id}`)
+
+    return { data }
+  } catch (err) {
+    console.error("Error updating conversation:", err)
+    return { error: handleSupabaseError(err, "updateConversation", "Failed to update conversation") }
   }
-
-  revalidatePath("/dashboard")
-
-  return { success: true }
 }

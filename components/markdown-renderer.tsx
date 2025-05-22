@@ -10,12 +10,27 @@ import { cn } from "@/lib/utils"
 
 interface MarkdownRendererProps {
   content: string
+  contentHtml?: string | null
   className?: string
+  useHtml?: boolean
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, contentHtml, className, useHtml = false }: MarkdownRendererProps) {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
+
+  // If HTML content is available and useHtml is true, render it directly
+  if (useHtml && contentHtml) {
+    return (
+      <div
+        className={cn(
+          "prose prose-neutral dark:prose-invert max-w-none transition-colors duration-300 ease-in-out",
+          className,
+        )}
+        dangerouslySetInnerHTML={{ __html: contentHtml }}
+      />
+    )
+  }
 
   return (
     <ReactMarkdown

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send, Trash2 } from "lucide-react"
-import { formatDate } from "@/lib/utils"
+import { formatDate, handleSupabaseError } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
 interface ConversationDetailProps {
@@ -14,10 +14,12 @@ interface ConversationDetailProps {
 
 interface Conversation {
   id: string
+  user_id: string
   chat_name: string
   chat_summary: string | null
   chat_transcription: string | null
   created_at: string
+  chat_duration: number | null
 }
 
 export function ConversationDetail({ conversationId, onDelete }: ConversationDetailProps) {
@@ -41,20 +43,37 @@ export function ConversationDetail({ conversationId, onDelete }: ConversationDet
       setIsLoading(true)
       setError(null)
 
+      // Check authentication first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        throw new Error(handleSupabaseError(sessionError, "fetchConversation:getSession", "Authentication error"))
+      }
+
+      if (!sessionData.session) {
+        throw new Error("You must be logged in to view conversation details")
+      }
+
+      const userId = sessionData.session.user.id
+
       const { data, error } = await supabase
         .from("chats")
-        .select("id, chat_name, chat_summary, chat_transcription, created_at")
+        .select("id, user_id, chat_name, chat_summary, chat_transcription, created_at, chat_duration")
         .eq("id", id)
+        .eq("user_id", userId) // Explicitly filter by user_id for RLS
         .single()
 
       if (error) {
-        throw error
+        if (error.code === "PGRST116") {
+          throw new Error("Conversation not found or you don't have permission to view it")
+        }
+        throw new Error(handleSupabaseError(error, "fetchConversation:fetchChat", "Failed to load conversation"))
       }
 
       setConversation(data)
     } catch (err) {
       console.error("Error fetching conversation:", err)
-      setError("Failed to load conversation details")
+      setError(handleSupabaseError(err, "fetchConversation", "Failed to load conversation details"))
     } finally {
       setIsLoading(false)
     }
@@ -65,6 +84,23 @@ export function ConversationDetail({ conversationId, onDelete }: ConversationDet
 
     try {
       setIsDeleting(true)
+
+      // Check authentication first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        throw new Error(handleSupabaseError(sessionError, "handleDelete:getSession", "Authentication error"))
+      }
+
+      if (!sessionData.session) {
+        throw new Error("You must be logged in to delete a conversation")
+      }
+
+      // Verify ownership before attempting to delete
+      if (conversation && conversation.user_id !== sessionData.session.user.id) {
+        throw new Error("You don't have permission to delete this conversation")
+      }
+
       await onDelete(conversationId)
       toast({
         title: "Conversation deleted",
@@ -74,7 +110,7 @@ export function ConversationDetail({ conversationId, onDelete }: ConversationDet
       console.error("Error deleting conversation:", err)
       toast({
         title: "Error",
-        description: "Failed to delete conversation. Please try again.",
+        description: handleSupabaseError(err, "handleDelete", "Failed to delete conversation. Please try again."),
         variant: "destructive",
       })
     } finally {
@@ -88,6 +124,22 @@ export function ConversationDetail({ conversationId, onDelete }: ConversationDet
     try {
       setIsSendingEstimate(true)
 
+      // Check authentication first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        throw new Error(handleSupabaseError(sessionError, "handleSendForEstimate:getSession", "Authentication error"))
+      }
+
+      if (!sessionData.session) {
+        throw new Error("You must be logged in to request an estimate")
+      }
+
+      // Verify ownership before proceeding
+      if (conversation && conversation.user_id !== sessionData.session.user.id) {
+        throw new Error("You don't have permission to request an estimate for this conversation")
+      }
+
       // Simulate sending for estimate
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
@@ -99,7 +151,11 @@ export function ConversationDetail({ conversationId, onDelete }: ConversationDet
       console.error("Error sending for estimate:", err)
       toast({
         title: "Error",
-        description: "Failed to send for estimate. Please try again.",
+        description: handleSupabaseError(
+          err,
+          "handleSendForEstimate",
+          "Failed to send for estimate. Please try again.",
+        ),
         variant: "destructive",
       })
     } finally {
@@ -149,7 +205,7 @@ export function ConversationDetail({ conversationId, onDelete }: ConversationDet
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b">
-        <h2 className="text-xl font-medium">{conversation.chat_name}</h2>
+        <h2 className="text-xl font-medium">{conversation.chat_name || "Untitled Chat"}</h2>
         <p className="text-sm text-muted-foreground mt-1">{formatDate(new Date(conversation.created_at))}</p>
       </div>
 

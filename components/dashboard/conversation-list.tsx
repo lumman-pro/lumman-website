@@ -6,12 +6,13 @@ import { LukeButton } from "@/components/luke-button"
 import { Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 interface Conversation {
   id: string
   chat_name: string
   created_at: string
-  chat_duration: number
+  chat_duration: number | null
 }
 
 interface ConversationListProps {
@@ -29,6 +30,7 @@ export function ConversationList({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isCreatingNew, setIsCreatingNew] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchConversations()
@@ -37,14 +39,35 @@ export function ConversationList({
   const fetchConversations = async () => {
     try {
       setIsLoading(true)
+      setError(null)
+
+      // Check if user is authenticated first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        throw new Error("Authentication error: " + sessionError.message)
+      }
+
+      // If no session exists, set empty conversations and return early
+      if (!sessionData.session) {
+        setError("You must be logged in to view conversations")
+        setConversations([])
+        return
+      }
+
+      const userId = sessionData.session.user.id
+
+      // Only proceed with fetching conversations if user is authenticated
+      // RLS will automatically filter to only show the user's own chats,
+      // but we're explicitly filtering by user_id for clarity
       const { data, error } = await supabase
         .from("chats")
         .select("id, chat_name, created_at, chat_duration")
-        // Removed the deleted filter since the column no longer exists
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
 
       if (error) {
-        throw error
+        throw new Error("Failed to load conversations: " + error.message)
       }
 
       setConversations(data || [])
@@ -55,7 +78,8 @@ export function ConversationList({
       }
     } catch (err) {
       console.error("Error fetching conversations:", err)
-      setError("Failed to load conversations")
+      setError(err instanceof Error ? err.message : "Failed to load conversations")
+      setConversations([])
     } finally {
       setIsLoading(false)
     }
@@ -64,6 +88,19 @@ export function ConversationList({
   const handleNewConversation = async () => {
     try {
       setIsCreatingNew(true)
+
+      // Check authentication first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError || !sessionData.session) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to create a conversation",
+          variant: "destructive",
+        })
+        return
+      }
+
       const newConversationId = await onNewConversation()
 
       // Refresh the conversation list
@@ -73,7 +110,11 @@ export function ConversationList({
       onSelectConversation(newConversationId)
     } catch (err) {
       console.error("Error creating new conversation:", err)
-      setError("Failed to create new conversation")
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to create new conversation",
+        variant: "destructive",
+      })
     } finally {
       setIsCreatingNew(false)
     }
@@ -122,12 +163,12 @@ export function ConversationList({
                     selectedConversationId === conversation.id && "bg-muted",
                   )}
                 >
-                  <div className="font-medium truncate">{conversation.chat_name}</div>
+                  <div className="font-medium truncate">{conversation.chat_name || "Untitled Chat"}</div>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-muted-foreground">
                       {formatDate(new Date(conversation.created_at))}
                     </span>
-                    {conversation.chat_duration > 0 && (
+                    {conversation.chat_duration && conversation.chat_duration > 0 && (
                       <span className="text-xs text-muted-foreground">
                         {Math.floor(conversation.chat_duration / 60)}:
                         {(conversation.chat_duration % 60).toString().padStart(2, "0")}

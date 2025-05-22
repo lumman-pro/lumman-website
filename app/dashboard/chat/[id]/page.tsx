@@ -1,184 +1,128 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
+import type React from "react"
+
+import { useParams, useRouter } from "next/navigation"
+import { useChatMessages, useAddChatMessage } from "@/hooks/use-data-fetching"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, Send, Trash2 } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Send } from "lucide-react"
 import { formatDate } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { deleteConversation } from "@/app/dashboard/actions"
 
-interface Conversation {
-  id: string
-  chat_name: string
-  chat_summary: string | null
-  chat_transcription: string | null
-  created_at: string
-}
-
-export default function ChatPage({ params }: { params: { id: string } }) {
-  const id = params.id // Store the id in a variable to avoid multiple accesses
-  const [conversation, setConversation] = useState<Conversation | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isSendingEstimate, setIsSendingEstimate] = useState(false)
-  const { toast } = useToast()
+export default function ChatPage() {
+  const params = useParams()
   const router = useRouter()
+  const chatId = params?.id as string
+  const { toast } = useToast()
 
+  const [message, setMessage] = useState("")
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Use React Query hooks
+  const { data: chatData, isLoading, error } = useChatMessages(chatId)
+  const addMessageMutation = useAddChatMessage()
+
+  // Scroll to bottom when messages change
   useEffect(() => {
-    if (id) {
-      fetchConversation(id)
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [id])
+  }, [chatData?.messages])
 
-  const fetchConversation = async (conversationId: string) => {
-    try {
-      setIsLoading(true)
-      setError(null)
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-      const { data, error } = await supabase
-        .from("chats")
-        .select("id, chat_name, chat_summary, chat_transcription, created_at")
-        .eq("id", conversationId)
-        .single()
-
-      if (error) {
-        throw error
-      }
-
-      setConversation(data)
-    } catch (err) {
-      console.error("Error fetching conversation:", err)
-      setError("Failed to load conversation details")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!id) return
+    if (!message.trim()) return
 
     try {
-      setIsDeleting(true)
-      await deleteConversation(id)
-      toast({
-        title: "Conversation deleted",
-        description: "The conversation has been successfully deleted.",
+      await addMessageMutation.mutateAsync({
+        chatId,
+        content: message,
+        role: "user",
       })
-      router.push("/dashboard/new")
-    } catch (err) {
-      console.error("Error deleting conversation:", err)
+
+      setMessage("")
+    } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete conversation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to send message",
         variant: "destructive",
       })
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
-  const handleSendForEstimate = async () => {
-    if (!id) return
-
-    try {
-      setIsSendingEstimate(true)
-
-      // Simulate sending for estimate
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      toast({
-        title: "Estimate requested",
-        description: "Your conversation has been sent for an estimate. We'll get back to you soon.",
-      })
-    } catch (err) {
-      console.error("Error sending for estimate:", err)
-      toast({
-        title: "Error",
-        description: "Failed to send for estimate. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSendingEstimate(false)
     }
   }
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-16rem)]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="mt-4 text-muted-foreground">Loading conversation...</p>
+      <div className="flex flex-col h-full p-4">
+        <div className="flex-1 overflow-y-auto space-y-4 animate-pulse">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+              <div
+                className={cn(
+                  "max-w-[80%] rounded-lg p-4",
+                  i % 2 === 0 ? "bg-primary text-primary-foreground" : "bg-muted",
+                )}
+                style={{ width: `${Math.random() * 40 + 20}%`, height: `${Math.random() * 40 + 40}px` }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-16rem)]">
-        <p className="text-destructive">{error}</p>
-        <Button onClick={() => id && fetchConversation(id)} className="mt-4" variant="outline">
-          Try again
-        </Button>
-      </div>
-    )
-  }
-
-  if (!conversation) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-16rem)]">
-        <p className="text-muted-foreground">Conversation not found</p>
-        <Button onClick={() => router.push("/dashboard/new")} className="mt-4" variant="outline">
-          Start a new conversation
-        </Button>
+      <div className="flex flex-col h-full p-4">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-destructive text-center">
+            {error instanceof Error ? error.message : "Failed to load chat"}
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-medium">{conversation.chat_name}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{formatDate(new Date(conversation.created_at))}</p>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {chatData?.messages.map((msg) => (
+          <div key={msg.id} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+            <div
+              className={cn(
+                "max-w-[80%] rounded-lg p-4",
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
+              )}
+            >
+              <div className="whitespace-pre-wrap">{msg.content}</div>
+              <div className="text-xs mt-2 opacity-70">{formatDate(new Date(msg.created_at))}</div>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
       </div>
 
-      <div className="prose prose-neutral dark:prose-invert max-w-none mb-8">
-        {conversation.chat_summary ? (
-          conversation.chat_summary.split("\n\n").map((paragraph, index) => <p key={index}>{paragraph}</p>)
-        ) : (
-          <p className="text-muted-foreground">No summary available for this conversation.</p>
-        )}
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4 justify-end">
-        <Button onClick={handleSendForEstimate} disabled={isSendingEstimate} className="sm:order-1">
-          {isSendingEstimate ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Sending...
-            </>
-          ) : (
-            <>
-              <Send className="mr-2 h-4 w-4" />
-              Send for Estimate
-            </>
-          )}
-        </Button>
-
-        <Button variant="outline" onClick={handleDelete} disabled={isDeleting} className="sm:order-2">
-          {isDeleting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Deleting...
-            </>
-          ) : (
-            <>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Chat
-            </>
-          )}
-        </Button>
+      <div className="p-4 border-t">
+        <form onSubmit={handleSendMessage} className="flex gap-2">
+          <Textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type your message..."
+            className="min-h-[60px] flex-1"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                handleSendMessage(e)
+              }
+            }}
+          />
+          <Button type="submit" size="icon" disabled={addMessageMutation.isPending}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
       </div>
     </div>
   )

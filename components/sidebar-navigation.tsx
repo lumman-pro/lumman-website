@@ -1,21 +1,13 @@
 "use client"
-
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/lib/supabase/auth"
-import { supabase } from "@/lib/supabase/client"
 import { MessageSquarePlus, User, LogOut } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { useUserProfile } from "@/hooks/use-user-profile"
-
-interface Conversation {
-  id: string
-  chat_name: string
-  created_at: string
-}
+import { useToast } from "@/hooks/use-toast"
+import { useUserData, useChats } from "@/hooks/use-data-fetching"
 
 interface SidebarNavigationProps {
   isOpen: boolean
@@ -25,68 +17,30 @@ interface SidebarNavigationProps {
 export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
-  const { profile, isLoading: isProfileLoading } = useUserProfile()
+  const { toast } = useToast()
 
-  useEffect(() => {
-    // Check if user is logged in
-    const checkUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      setUser(session?.user || null)
-    }
-
-    checkUser()
-    fetchConversations()
-  }, [])
-
-  const fetchConversations = async () => {
-    try {
-      setIsLoading(true)
-
-      // Check if user is authenticated first
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-
-      if (sessionError) {
-        console.error("Error checking session:", sessionError)
-        setConversations([])
-        return
-      }
-
-      // If no session exists, set empty conversations and return early
-      if (!sessionData.session) {
-        setConversations([])
-        return
-      }
-
-      // Only proceed with fetching conversations if user is authenticated
-      const { data, error } = await supabase
-        .from("chats")
-        .select("id, chat_name, created_at")
-        .order("created_at", { ascending: false })
-
-      if (error) {
-        console.error("Error fetching conversations:", error)
-        setConversations([])
-        return
-      }
-
-      setConversations(data || [])
-    } catch (err) {
-      console.error("Error fetching conversations:", err)
-      setConversations([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Use React Query hooks
+  const { data: userData, isLoading: isUserLoading } = useUserData()
+  const { data: chatsData, isLoading: isChatsLoading, error: chatsError } = useChats({ limit: 20 })
 
   const handleSignOut = async () => {
-    await signOut()
-    router.push("/")
-    onClose()
+    try {
+      const { error } = await signOut()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      router.push("/")
+      onClose()
+    } catch (error) {
+      console.error("Error signing out:", error)
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleNewChat = () => {
@@ -115,13 +69,17 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
 
       {/* Scrollable conversations list */}
       <div className="flex-1 overflow-y-auto py-2">
-        {isLoading ? (
+        {isChatsLoading ? (
           <div className="px-4 py-2 text-sm text-muted-foreground">Loading conversations...</div>
-        ) : conversations.length === 0 ? (
+        ) : chatsError ? (
+          <div className="px-4 py-2 text-sm text-destructive">
+            {chatsError instanceof Error ? chatsError.message : "Failed to load conversations"}
+          </div>
+        ) : !chatsData || chatsData.chats.length === 0 ? (
           <div className="px-4 py-2 text-sm text-muted-foreground">No conversations yet</div>
         ) : (
           <ul className="space-y-1">
-            {conversations.map((conversation) => (
+            {chatsData.chats.map((conversation) => (
               <li key={conversation.id}>
                 <Button
                   variant="ghost"
@@ -132,7 +90,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
                   onClick={() => handleChatSelect(conversation.id)}
                 >
                   <div className="flex flex-col items-start">
-                    <span className="truncate w-full text-left">{conversation.chat_name}</span>
+                    <span className="truncate w-full text-left">{conversation.chat_name || "Untitled Chat"}</span>
                     <span className="text-xs text-muted-foreground mt-1">
                       {formatDate(new Date(conversation.created_at))}
                     </span>
@@ -162,7 +120,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
               className={cn("w-full justify-start text-sm", isActive("/account") && "bg-muted font-medium")}
             >
               <User className="h-4 w-4 mr-2" />
-              {isProfileLoading ? "Loading..." : profile?.user_name || "Account Settings"}
+              {isUserLoading ? "Loading..." : userData?.user_name || "Account Settings"}
             </Button>
           </Link>
 

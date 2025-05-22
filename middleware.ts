@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
 export async function middleware(request: NextRequest) {
-  // Initialize response object
+  // Create a single response object at the beginning that we'll use throughout
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -10,45 +10,45 @@ export async function middleware(request: NextRequest) {
   })
 
   try {
-    // Create Supabase server client
+    // Create a cookie handler that uses the same response object
+    const supabaseCookieHandler = {
+      get(name: string) {
+        return request.cookies.get(name)?.value
+      },
+      set(
+        name: string,
+        value: string,
+        options: { path: string; maxAge?: number; domain?: string; sameSite?: string; secure?: boolean },
+      ) {
+        // Set cookie in both request and response to ensure consistency
+        response.cookies.set({
+          name,
+          value,
+          ...options,
+        })
+      },
+      remove(name: string, options: { path: string; domain?: string }) {
+        // Remove cookie from both request and response
+        response.cookies.set({
+          name,
+          value: "",
+          ...options,
+          maxAge: 0,
+        })
+      },
+    }
+
+    // Create Supabase server client with our consistent cookie handler
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value
-          },
-          set(name: string, value: string, options) {
-            // Only create a new response object when setting cookies
-            request.cookies.set({
-              name,
-              value,
-              ...options,
-            })
-
-            // Update the response cookies
-            response.cookies.set({
-              name,
-              value,
-              ...options,
-            })
-          },
-          remove(name: string, options) {
-            // Only create a new response object when removing cookies
-            request.cookies.set({
-              name,
-              value: "",
-              ...options,
-            })
-
-            // Update the response cookies
-            response.cookies.set({
-              name,
-              value: "",
-              ...options,
-            })
-          },
+        cookies: supabaseCookieHandler,
+        auth: {
+          flowType: "pkce",
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          persistSession: true,
         },
       },
     )
@@ -60,30 +60,61 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getSession()
 
     if (sessionError) {
-      console.error("Error in middleware session check:", sessionError)
-      // Continue without session on error
-    } else {
-      // If no session and trying to access protected routes
-      if (!session && request.nextUrl.pathname.startsWith("/dashboard")) {
-        const redirectUrl = new URL("/login", request.url)
-        redirectUrl.searchParams.set("redirect", request.nextUrl.pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
-
-      // If session exists and trying to access login
-      if (session && request.nextUrl.pathname === "/login") {
-        return NextResponse.redirect(new URL("/dashboard", request.url))
-      }
+      console.error("Error in middleware session check:", sessionError.message, {
+        status: sessionError.status,
+        name: sessionError.name,
+        details: sessionError.details,
+      })
+      // Continue without session on error, but log detailed information
     }
 
+    // Debug logging for authentication state
+    console.log(`Middleware: Path=${request.nextUrl.pathname}, Authenticated=${!!session}`)
+
+    // Handle protected routes - redirect to login if not authenticated
+    if (!session && isProtectedRoute(request.nextUrl.pathname)) {
+      console.log(`Redirecting unauthenticated user from ${request.nextUrl.pathname} to login`)
+      const redirectUrl = new URL("/login", request.url)
+      redirectUrl.searchParams.set("redirect", request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    // Redirect authenticated users away from auth pages
+    if (session && isAuthRoute(request.nextUrl.pathname)) {
+      console.log(`Redirecting authenticated user from ${request.nextUrl.pathname} to dashboard`)
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    }
+
+    // Return the response with all cookies properly set
     return response
   } catch (error) {
-    // Log any unexpected errors
-    console.error("Unexpected error in middleware:", error)
+    // Log any unexpected errors with detailed information
+    console.error(
+      "Unexpected error in middleware:",
+      error instanceof Error
+        ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          }
+        : error,
+    )
 
     // Return the original response if an error occurs
     return response
   }
+}
+
+// Helper function to determine if a route requires authentication
+function isProtectedRoute(pathname: string): boolean {
+  const protectedPaths = ["/dashboard", "/account"]
+
+  return protectedPaths.some((path) => pathname.startsWith(path))
+}
+
+// Helper function to determine if a route is an auth route
+function isAuthRoute(pathname: string): boolean {
+  return pathname === "/login" || pathname === "/signup"
 }
 
 export const config = {

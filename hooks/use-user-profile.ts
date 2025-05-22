@@ -3,14 +3,21 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+// Add the import for handleSupabaseError
+import { handleSupabaseError } from "@/lib/utils"
 
 export interface UserProfile {
-  id: string
   user_id: string
   user_name: string | null
   user_email: string | null
+  company_name: string | null
+  company_url: string | null
+  user_phone: string | null
   created_at: string
   updated_at: string | null
+  account_type: string | null
+  subscription_status: string | null
+  subscription_id: string | null
 }
 
 export function useUserProfile() {
@@ -22,6 +29,7 @@ export function useUserProfile() {
   useEffect(() => {
     let isMounted = true
 
+    // Update the useUserProfile hook's fetchUserProfile method
     const fetchUserProfile = async () => {
       try {
         setIsLoading(true)
@@ -65,8 +73,14 @@ export function useUserProfile() {
             .from("user_profiles")
             .insert({
               user_id: user.id,
-              user_name: user.phone || null,
+              user_name: user.user_metadata?.name || user.phone || null,
               user_email: user.email || null,
+              user_phone: user.phone || null,
+              company_name: null,
+              company_url: null,
+              account_type: "free",
+              subscription_status: "inactive",
+              subscription_id: null,
             })
             .select("*")
             .single()
@@ -82,7 +96,7 @@ export function useUserProfile() {
       } catch (err) {
         console.error("Error fetching user profile:", err)
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to load user profile")
+          setError(handleSupabaseError(err, "fetchUserProfile", "Failed to load user profile"))
         }
       } finally {
         if (isMounted) {
@@ -98,7 +112,17 @@ export function useUserProfile() {
     }
   }, [])
 
-  const updateProfile = async (name: string, email: string) => {
+  // Update the updateProfile method
+  const updateProfile = async (updates: {
+    user_name?: string | null
+    user_email?: string | null
+    company_name?: string | null
+    company_url?: string | null
+    user_phone?: string | null
+    account_type?: string | null
+    subscription_status?: string | null
+    subscription_id?: string | null
+  }) => {
     try {
       if (!profile) {
         throw new Error("Profile not loaded")
@@ -107,8 +131,7 @@ export function useUserProfile() {
       const { data, error } = await supabase
         .from("user_profiles")
         .update({
-          user_name: name,
-          user_email: email,
+          ...updates,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", profile.user_id)
@@ -123,12 +146,13 @@ export function useUserProfile() {
       return { success: true, data }
     } catch (err) {
       console.error("Error updating profile:", err)
+      const errorMessage = handleSupabaseError(err, "updateProfile", "Failed to update profile")
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to update profile",
+        description: errorMessage,
         variant: "destructive",
       })
-      return { success: false, error: err }
+      return { success: false, error: err, message: errorMessage }
     }
   }
 
@@ -174,8 +198,14 @@ export function useUserProfile() {
             .from("user_profiles")
             .insert({
               user_id: user.id,
-              user_name: user.phone || null,
+              user_name: user.user_metadata?.name || user.phone || null,
               user_email: user.email || null,
+              user_phone: user.phone || null,
+              company_name: null,
+              company_url: null,
+              account_type: "free",
+              subscription_status: "inactive",
+              subscription_id: null,
             })
             .select("*")
             .single()

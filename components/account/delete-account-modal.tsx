@@ -3,9 +3,10 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
 import { supabase } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { handleSupabaseError } from "@/lib/utils"
 
 interface DeleteAccountModalProps {
   isOpen: boolean
@@ -23,6 +24,17 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
     try {
       setIsDeleting(true)
 
+      // Check authentication first
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        throw new Error(handleSupabaseError(sessionError, "handleDeleteAccount:getSession", "Authentication error"))
+      }
+
+      if (!sessionData.session) {
+        throw new Error("You must be logged in to delete your account")
+      }
+
       // Get current user
       const {
         data: { user },
@@ -36,21 +48,10 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
       const { error: profileError } = await supabase.from("user_profiles").delete().eq("user_id", user.id)
 
       if (profileError) {
-        throw profileError
-      }
-
-      // Delete user's chats - directly delete them, no soft delete
-      const { error: chatsError } = await supabase.from("chats").delete().eq("user_id", user.id)
-
-      if (chatsError) {
-        throw chatsError
-      }
-
-      // Delete the user account
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
-
-      if (deleteError) {
-        throw deleteError
+        console.error("Error deleting user profile:", profileError)
+        throw new Error(
+          handleSupabaseError(profileError, "handleDeleteAccount:deleteProfile", "Failed to delete user profile"),
+        )
       }
 
       // Sign out
@@ -67,17 +68,18 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
       console.error("Error deleting account:", error)
       toast({
         title: "Error",
-        description: "Failed to delete account. Please try again.",
+        description: handleSupabaseError(error, "handleDeleteAccount", "Failed to delete account. Please try again."),
         variant: "destructive",
       })
       setIsDeleting(false)
+      onClose()
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       <div className="flex justify-end p-4">
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" onClick={onClose} disabled={isDeleting}>
           <X className="h-6 w-6" />
           <span className="sr-only">Close</span>
         </Button>
@@ -86,7 +88,14 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
       <div className="flex-1 flex flex-col items-center justify-between p-6">
         <div className="w-full">
           <Button variant="destructive" className="w-full" onClick={handleDeleteAccount} disabled={isDeleting}>
-            I understand and confirm deletion
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting account...
+              </>
+            ) : (
+              "I understand and confirm deletion"
+            )}
           </Button>
         </div>
 
@@ -97,7 +106,7 @@ export function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps)
           </p>
         </div>
 
-        <Button variant="outline" className="w-full" onClick={onClose}>
+        <Button variant="outline" className="w-full" onClick={onClose} disabled={isDeleting}>
           Back
         </Button>
       </div>
