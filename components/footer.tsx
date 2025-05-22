@@ -1,5 +1,5 @@
-import { ThemeToggle } from "@/components/theme-toggle"
-import Link from "next/link"
+import { ThemeToggle } from "@/components/theme-toggle";
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -10,11 +10,14 @@ export function Footer() {
           © 2025 Lumman. All rights reserved. London.
         </p>
         <p className="mt-1 text-xs text-muted-foreground transition-colors duration-300 ease-in-out">
-          <Link href="/legal" className="hover:text-muted-foreground/80 transition-colors duration-300 ease-in-out">
+          <Link
+            href="/legal"
+            className="hover:text-muted-foreground/80 transition-colors duration-300 ease-in-out"
+          >
             Legal
           </Link>
         </p>
       </div>
     </footer>
-  )
+  );
 }

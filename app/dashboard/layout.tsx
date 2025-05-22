@@ -1,58 +1,58 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { SidebarNavigation } from "@/components/sidebar-navigation"
-import { cn } from "@/lib/utils"
-import { Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { SidebarNavigation } from "@/components/sidebar-navigation";
+import { cn } from "@/lib/utils";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Handle sidebar toggle
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
-  }
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
         // 768px is the md breakpoint in Tailwind
-        setIsSidebarOpen(false) // Reset mobile sidebar state
+        setIsSidebarOpen(false); // Reset mobile sidebar state
       }
-    }
+    };
 
     const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
+      const target = e.target as HTMLElement;
       if (
         isSidebarOpen &&
         !target.closest('[data-sidebar="true"]') &&
         !target.closest('[data-sidebar-toggle="true"]')
       ) {
-        setIsSidebarOpen(false)
+        setIsSidebarOpen(false);
       }
-    }
+    };
 
-    setIsMounted(true)
-    window.addEventListener("resize", handleResize)
-    document.addEventListener("mousedown", handleClickOutside)
+    setIsMounted(true);
+    window.addEventListener("resize", handleResize);
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      window.removeEventListener("resize", handleResize)
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [isSidebarOpen])
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isSidebarOpen]);
 
   if (!isMounted) {
-    return null // Prevent hydration mismatch
+    return null; // Prevent hydration mismatch
   }
 
   return (
@@ -69,7 +69,7 @@ export default function DashboardLayout({
           <Menu className="h-5 w-5" />
           <span className="sr-only">Toggle menu</span>
         </Button>
-        
+
         {/* Overlay for mobile */}
         {isSidebarOpen && (
           <div
@@ -87,7 +87,10 @@ export default function DashboardLayout({
           )}
           data-sidebar="true"
         >
-          <SidebarNavigation isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+          <SidebarNavigation
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+          />
         </div>
 
         {/* Main content */}
@@ -96,5 +99,5 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
-  )
+  );
 }

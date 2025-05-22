@@ -63,5 +63,6 @@ We reserve the right, at our sole discretion, to modify or replace these Terms a
 ## Contact Us
 
 If you have any questions about these Terms, please contact us at:
+
 - Email: legal@lumman.ai
 - Address: Lumman AI Ltd., London, United Kingdom

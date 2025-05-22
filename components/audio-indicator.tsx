@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 interface AudioIndicatorProps {
-  isActive: boolean
-  className?: string
+  isActive: boolean;
+  className?: string;
 }
 
 export function AudioIndicator({ isActive, className }: AudioIndicatorProps) {
@@ -25,13 +25,18 @@ export function AudioIndicator({ isActive, className }: AudioIndicatorProps) {
       ))}
       <style jsx global>{`
         @keyframes sound-wave {
-          0%, 100% { height: 0.25rem; }
-          50% { height: 0.75rem; }
+          0%,
+          100% {
+            height: 0.25rem;
+          }
+          50% {
+            height: 0.75rem;
+          }
         }
         .animate-sound-wave {
           animation: sound-wave 1s ease-in-out infinite;
         }
       `}</style>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { PostCardSkeleton } from "@/components/insights/post-card-skeleton"
+import { PostCardSkeleton } from "@/components/insights/post-card-skeleton";
 
 export default function InsightsLoading() {
   return (
@@ -26,5 +26,5 @@ export default function InsightsLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

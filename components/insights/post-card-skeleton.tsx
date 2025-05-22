@@ -15,5 +15,5 @@ export function PostCardSkeleton() {
       <div className="h-4 bg-muted animate-pulse w-full rounded"></div>
       <div className="h-4 bg-muted animate-pulse w-5/6 rounded"></div>
     </article>
-  )
+  );
 }

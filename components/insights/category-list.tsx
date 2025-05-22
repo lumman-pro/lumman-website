@@ -1,20 +1,25 @@
-import Link from "next/link"
-import { cn } from "@/lib/utils"
-import type { Category } from "@/lib/insights"
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import type { Category } from "@/lib/insights";
 
 interface CategoryListProps {
-  categories: Category[]
-  currentCategory?: string | null
+  categories: Category[];
+  currentCategory?: string | null;
 }
 
-export function CategoryList({ categories, currentCategory }: CategoryListProps) {
+export function CategoryList({
+  categories,
+  currentCategory,
+}: CategoryListProps) {
   return (
     <div className="flex flex-wrap gap-4 mb-8">
       <Link
         href="/insights"
         className={cn(
           "text-sm transition-colors duration-300 ease-in-out",
-          !currentCategory ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground",
+          !currentCategory
+            ? "text-foreground font-medium"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         All
@@ -35,5 +40,5 @@ export function CategoryList({ categories, currentCategory }: CategoryListProps)
         </Link>
       ))}
     </div>
-  )
+  );
 }

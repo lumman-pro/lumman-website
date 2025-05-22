@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { LegalMarkdownRenderer } from "@/components/legal/legal-markdown-renderer"
-import { Loader2 } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LegalMarkdownRenderer } from "@/components/legal/legal-markdown-renderer";
+import { Loader2 } from "lucide-react";
 
 type TabInfo = {
-  id: string
-  label: string
-  file: string
-}
+  id: string;
+  label: string;
+  file: string;
+};
 
 const legalTabs: TabInfo[] = [
   { id: "privacy", label: "Privacy Policy", file: "privacy.md" },
@@ -17,45 +17,49 @@ const legalTabs: TabInfo[] = [
   { id: "refund", label: "Refund Policy", file: "refund.md" },
   { id: "business", label: "Business Info", file: "business-info.md" },
   { id: "other", label: "Other", file: "other.md" },
-]
+];
 
 export function LegalTabs() {
-  const [activeTab, setActiveTab] = useState<string>("privacy")
-  const [content, setContent] = useState<string>("")
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<string>("privacy");
+  const [content, setContent] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchContent = async () => {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       try {
-        const tab = legalTabs.find((tab) => tab.id === activeTab)
-        if (!tab) return
+        const tab = legalTabs.find((tab) => tab.id === activeTab);
+        if (!tab) return;
 
-        const response = await fetch(`/legal/${tab.file}`)
+        const response = await fetch(`/legal/${tab.file}`);
 
         if (!response.ok) {
-          throw new Error(`Failed to load ${tab.label}`)
+          throw new Error(`Failed to load ${tab.label}`);
         }
 
-        const text = await response.text()
-        setContent(text)
+        const text = await response.text();
+        setContent(text);
       } catch (err) {
-        console.error("Failed to load legal content:", err)
-        setError(err instanceof Error ? err.message : "Failed to load content")
-        setContent("")
+        console.error("Failed to load legal content:", err);
+        setError(err instanceof Error ? err.message : "Failed to load content");
+        setContent("");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchContent()
-  }, [activeTab])
+    fetchContent();
+  }, [activeTab]);
 
   return (
-    <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+    <Tabs
+      defaultValue={activeTab}
+      onValueChange={setActiveTab}
+      className="w-full"
+    >
       <TabsList className="mb-8 w-full flex overflow-x-auto">
         {legalTabs.map((tab) => (
           <TabsTrigger
@@ -78,7 +82,9 @@ export function LegalTabs() {
             ) : error ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center">
                 <p className="text-destructive">{error}</p>
-                <p className="text-muted-foreground mt-2">Legal document may be missing or unavailable.</p>
+                <p className="text-muted-foreground mt-2">
+                  Legal document may be missing or unavailable.
+                </p>
               </div>
             ) : (
               <div className="overflow-auto max-h-[70vh]">
@@ -89,5 +95,5 @@ export function LegalTabs() {
         </TabsContent>
       ))}
     </Tabs>
-  )
+  );
 }

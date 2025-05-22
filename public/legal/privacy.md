@@ -61,5 +61,6 @@ We may update this Privacy Policy from time to time. If we make significant chan
 ## Contact Us
 
 If you have any questions about this Privacy Policy or our data practices, please contact us at:
+
 - Email: privacy@lumman.ai
 - Address: Lumman AI Ltd., London, United Kingdom

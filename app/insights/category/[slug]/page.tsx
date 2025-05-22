@@ -1,24 +1,25 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { useInsights, useCategories } from "@/hooks/use-data-fetching"
-import { PostCard } from "@/components/insights/post-card"
-import { CategoryList } from "@/components/insights/category-list"
-import { Pagination } from "@/components/insights/pagination"
-import { PostCardSkeleton } from "@/components/insights/post-card-skeleton"
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useInsights, useCategories } from "@/hooks/use-data-fetching";
+import { PostCard } from "@/components/insights/post-card";
+import { CategoryList } from "@/components/insights/category-list";
+import { Pagination } from "@/components/insights/pagination";
+import { PostCardSkeleton } from "@/components/insights/post-card-skeleton";
 
-const POSTS_PER_PAGE = 9
+const POSTS_PER_PAGE = 9;
 
 export default function CategoryPage() {
-  const params = useParams()
-  const router = useRouter()
-  const slug = params?.slug as string
-  const [currentPage, setCurrentPage] = useState(1)
-  const offset = (currentPage - 1) * POSTS_PER_PAGE
+  const params = useParams();
+  const router = useRouter();
+  const slug = params?.slug as string;
+  const [currentPage, setCurrentPage] = useState(1);
+  const offset = (currentPage - 1) * POSTS_PER_PAGE;
 
   // Use React Query hooks
-  const { data: categoriesData, isLoading: isCategoriesLoading } = useCategories()
+  const { data: categoriesData, isLoading: isCategoriesLoading } =
+    useCategories();
   const {
     data: insightsData,
     isLoading: isInsightsLoading,
@@ -27,22 +28,24 @@ export default function CategoryPage() {
     limit: POSTS_PER_PAGE,
     offset,
     categorySlug: slug,
-  })
+  });
 
-  const category = categoriesData?.find((c) => c.slug === slug)
-  const totalPages = insightsData ? Math.ceil(insightsData.count / POSTS_PER_PAGE) : 0
+  const category = categoriesData?.find((c) => c.slug === slug);
+  const totalPages = insightsData
+    ? Math.ceil(insightsData.count / POSTS_PER_PAGE)
+    : 0;
 
   // If category not found after loading, redirect to 404
   useEffect(() => {
     if (!isCategoriesLoading && categoriesData && !category) {
-      router.push("/404")
+      router.push("/404");
     }
-  }, [isCategoriesLoading, categoriesData, category, router])
+  }, [isCategoriesLoading, categoriesData, category, router]);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   if (isCategoriesLoading || (categoriesData && !category)) {
     return (
@@ -57,7 +60,7 @@ export default function CategoryPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -72,7 +75,10 @@ export default function CategoryPage() {
           </p>
         </div>
 
-        <CategoryList categories={categoriesData || []} currentCategory={slug} />
+        <CategoryList
+          categories={categoriesData || []}
+          currentCategory={slug}
+        />
 
         {isInsightsLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
@@ -82,10 +88,14 @@ export default function CategoryPage() {
           </div>
         ) : insightsError ? (
           <p className="text-destructive py-12 text-center">
-            {insightsError instanceof Error ? insightsError.message : "Failed to load insights"}
+            {insightsError instanceof Error
+              ? insightsError.message
+              : "Failed to load insights"}
           </p>
         ) : !insightsData || insightsData.posts.length === 0 ? (
-          <p className="text-muted-foreground py-12 text-center">No posts found in this category.</p>
+          <p className="text-muted-foreground py-12 text-center">
+            No posts found in this category.
+          </p>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
@@ -104,5 +114,5 @@ export default function CategoryPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

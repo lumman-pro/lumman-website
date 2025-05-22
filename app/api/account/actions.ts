@@ -1,28 +1,34 @@
-"use server"
+"use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server-client"
-import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
+import { createServerSupabaseClient } from "@/lib/supabase/server-client";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 // Add the import for handleSupabaseError
-import { handleSupabaseError } from "@/lib/utils"
+import { handleSupabaseError } from "@/lib/utils";
 
 // Update the deleteAccount function
 export async function deleteAccount() {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = createServerSupabaseClient();
 
     // Get the current user
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (userError) {
-      throw new Error(handleSupabaseError(userError, "deleteAccount:getUser", "Authentication failed"))
+      throw new Error(
+        handleSupabaseError(
+          userError,
+          "deleteAccount:getUser",
+          "Authentication failed",
+        ),
+      );
     }
 
     if (!user) {
-      throw new Error("Not authenticated")
+      throw new Error("Not authenticated");
     }
 
     // Archive user's chats instead of deleting them
@@ -72,52 +78,79 @@ export async function deleteAccount() {
     // }
 
     // Delete user's profile
-    const { error: profileError } = await supabase.from("user_profiles").delete().eq("user_id", user.id)
+    const { error: profileError } = await supabase
+      .from("user_profiles")
+      .delete()
+      .eq("user_id", user.id);
 
     if (profileError) {
-      throw new Error(handleSupabaseError(profileError, "deleteAccount:deleteProfile", "Failed to delete user profile"))
+      throw new Error(
+        handleSupabaseError(
+          profileError,
+          "deleteAccount:deleteProfile",
+          "Failed to delete user profile",
+        ),
+      );
     }
 
     // Delete the user account
-    const { error: userError2 } = await supabase.auth.admin.deleteUser(user.id)
+    const { error: userError2 } = await supabase.auth.admin.deleteUser(user.id);
 
     if (userError2) {
-      throw new Error(handleSupabaseError(userError2, "deleteAccount:deleteUser", "Failed to delete user account"))
+      throw new Error(
+        handleSupabaseError(
+          userError2,
+          "deleteAccount:deleteUser",
+          "Failed to delete user account",
+        ),
+      );
     }
 
     // Sign out the user
-    await supabase.auth.signOut()
+    await supabase.auth.signOut();
 
-    revalidatePath("/")
-    redirect("/")
+    revalidatePath("/");
+    redirect("/");
   } catch (err) {
-    console.error("Error deleting account:", err)
-    return { error: handleSupabaseError(err, "deleteAccount", "Failed to delete account") }
+    console.error("Error deleting account:", err);
+    return {
+      error: handleSupabaseError(
+        err,
+        "deleteAccount",
+        "Failed to delete account",
+      ),
+    };
   }
 }
 
 // Update the updateUserProfile function
 export async function updateUserProfile(updates: {
-  user_name?: string | null
-  user_email?: string | null
-  company_name?: string | null
-  company_url?: string | null
+  user_name?: string | null;
+  user_email?: string | null;
+  company_name?: string | null;
+  company_url?: string | null;
 }) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = createServerSupabaseClient();
 
     // Get the current user
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (userError) {
-      throw new Error(handleSupabaseError(userError, "updateUserProfile:getUser", "Authentication failed"))
+      throw new Error(
+        handleSupabaseError(
+          userError,
+          "updateUserProfile:getUser",
+          "Authentication failed",
+        ),
+      );
     }
 
     if (!user) {
-      throw new Error("Not authenticated")
+      throw new Error("Not authenticated");
     }
 
     // Update the user profile
@@ -129,16 +162,28 @@ export async function updateUserProfile(updates: {
       })
       .eq("user_id", user.id)
       .select("*")
-      .single()
+      .single();
 
     if (error) {
-      throw new Error(handleSupabaseError(error, "updateUserProfile:update", "Failed to update user profile"))
+      throw new Error(
+        handleSupabaseError(
+          error,
+          "updateUserProfile:update",
+          "Failed to update user profile",
+        ),
+      );
     }
 
-    revalidatePath("/account")
-    return { data }
+    revalidatePath("/account");
+    return { data };
   } catch (err) {
-    console.error("Error updating user profile:", err)
-    return { error: handleSupabaseError(err, "updateUserProfile", "Failed to update profile") }
+    console.error("Error updating user profile:", err);
+    return {
+      error: handleSupabaseError(
+        err,
+        "updateUserProfile",
+        "Failed to update profile",
+      ),
+    };
   }
 }

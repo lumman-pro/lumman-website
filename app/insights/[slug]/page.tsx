@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
-import { useInsightBySlug } from "@/hooks/use-data-fetching"
-import { formatDate } from "@/lib/utils"
-import { MarkdownRenderer } from "@/components/markdown-renderer"
-import { PostSkeleton } from "@/components/insights/post-skeleton"
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { useInsightBySlug } from "@/hooks/use-data-fetching";
+import { formatDate } from "@/lib/utils";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { PostSkeleton } from "@/components/insights/post-skeleton";
 
 export default function PostPage() {
-  const params = useParams()
-  const router = useRouter()
-  const slug = params?.slug as string
+  const params = useParams();
+  const router = useRouter();
+  const slug = params?.slug as string;
 
   // Use React Query hook
-  const { data: post, isLoading, error } = useInsightBySlug(slug)
+  const { data: post, isLoading, error } = useInsightBySlug(slug);
 
   // If post not found after loading, redirect to 404
   if (!isLoading && !post) {
-    router.push("/404")
-    return null
+    router.push("/404");
+    return null;
   }
 
   if (isLoading) {
-    return <PostSkeleton />
+    return <PostSkeleton />;
   }
 
   if (error) {
@@ -32,7 +32,7 @@ export default function PostPage() {
           {error instanceof Error ? error.message : "Failed to load post"}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -51,7 +51,11 @@ export default function PostPage() {
           </h1>
 
           <div className="flex items-center text-sm text-muted-foreground">
-            {post.published_at && <time dateTime={post.published_at}>{formatDate(new Date(post.published_at))}</time>}
+            {post.published_at && (
+              <time dateTime={post.published_at}>
+                {formatDate(new Date(post.published_at))}
+              </time>
+            )}
 
             {post.categories && post.categories.length > 0 && (
               <>
@@ -82,7 +86,11 @@ export default function PostPage() {
           </div>
         )}
 
-        <MarkdownRenderer content={post.content} contentHtml={post.content_html} useHtml={!!post.content_html} />
+        <MarkdownRenderer
+          content={post.content}
+          contentHtml={post.content_html}
+          useHtml={!!post.content_html}
+        />
 
         {post.author && (
           <div className="border-t border-border pt-8 mt-12">
@@ -109,5 +117,5 @@ export default function PostPage() {
         )}
       </article>
     </div>
-  )
+  );
 }

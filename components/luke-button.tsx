@@ -1,115 +1,124 @@
-"use client"
+"use client";
 
-import { cn } from "@/lib/utils"
-import { useEffect, useState, useRef } from "react"
-import { useConversation } from "@/lib/elevenlabs"
-import { Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils";
+import { useEffect, useState, useRef } from "react";
+import { useConversation } from "@/lib/elevenlabs";
+import { Loader2 } from "lucide-react";
 
 export function LukeButton() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const [conversationState, setConversationState] = useState<"idle" | "connecting" | "connected" | "error">("idle")
-  const conversationRef = useRef(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [conversationState, setConversationState] = useState<
+    "idle" | "connecting" | "connected" | "error"
+  >("idle");
+  const conversationRef = useRef(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Initialize the conversation hook
   const conversation = useConversation({
     onConnect: () => {
-      setConversationState("connected")
-      console.log("Connected to Luke")
+      setConversationState("connected");
+      console.log("Connected to Luke");
     },
     onDisconnect: () => {
-      setConversationState("idle")
-      console.log("Disconnected from Luke")
+      setConversationState("idle");
+      console.log("Disconnected from Luke");
     },
     onMessage: (message) => {
-      console.log("Received message:", message)
+      console.log("Received message:", message);
     },
     onError: (err) => {
-      console.error("Conversation error:", err)
-      setErrorMessage(err?.message || "Connection error")
-      setConversationState("error")
+      console.error("Conversation error:", err);
+      setErrorMessage(err?.message || "Connection error");
+      setConversationState("error");
     },
-  })
+  });
 
   // Store the conversation reference
   useEffect(() => {
-    conversationRef.current = conversation
-  }, [conversation])
+    conversationRef.current = conversation;
+  }, [conversation]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
-    }
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
 
-    window.addEventListener("mousemove", handleMouseMove)
-    return () => window.removeEventListener("mousemove", handleMouseMove)
-  }, [])
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   const handleButtonClick = async () => {
     if (conversationState === "error") {
       // Reset error state and try again
-      setConversationState("idle")
-      setErrorMessage(null)
-      return
+      setConversationState("idle");
+      setErrorMessage(null);
+      return;
     }
 
     if (conversationState === "idle") {
-      setConversationState("connecting")
+      setConversationState("connecting");
 
       try {
         // Request microphone access
-        await navigator.mediaDevices.getUserMedia({ audio: true })
+        await navigator.mediaDevices.getUserMedia({ audio: true });
 
         // Start the conversation session
-        const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID
-        const isPublic = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_PUBLIC === "true"
+        const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
+        const isPublic =
+          process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_PUBLIC === "true";
 
         if (isPublic && agentId) {
-          await conversation.startSession({ agentId })
+          await conversation.startSession({ agentId });
         } else {
           try {
             // For private agents, fetch a signed URL
-            const response = await fetch("/api/elevenlabs/get-signed-url")
+            const response = await fetch("/api/elevenlabs/get-signed-url");
 
             // Check if response is ok
             if (!response.ok) {
-              throw new Error("Failed to get signed URL: " + response.status)
+              throw new Error("Failed to get signed URL: " + response.status);
             }
 
             // Make sure response is a valid Response object before calling json()
             if (response && typeof response.json === "function") {
-              const data = await response.json()
+              const data = await response.json();
 
               // Check if data contains url property
               if (data && data.url) {
-                await conversation.startSession({ url: data.url })
+                await conversation.startSession({ url: data.url });
               } else {
-                throw new Error("Invalid response format: missing URL")
+                throw new Error("Invalid response format: missing URL");
               }
             } else {
-              throw new Error("Invalid response format: json method not available")
+              throw new Error(
+                "Invalid response format: json method not available",
+              );
             }
           } catch (urlError) {
-            console.error("Failed to get signed URL:", urlError)
-            setErrorMessage(urlError instanceof Error ? urlError.message : "Failed to get signed URL")
-            setConversationState("error")
+            console.error("Failed to get signed URL:", urlError);
+            setErrorMessage(
+              urlError instanceof Error
+                ? urlError.message
+                : "Failed to get signed URL",
+            );
+            setConversationState("error");
           }
         }
       } catch (err: any) {
-        console.error("Failed to initialize conversation:", err)
-        setErrorMessage(err?.message || "Failed to initialize conversation")
-        setConversationState("error")
+        console.error("Failed to initialize conversation:", err);
+        setErrorMessage(err?.message || "Failed to initialize conversation");
+        setConversationState("error");
       }
     } else if (conversationState === "connected") {
       // If already connected, end the session
       try {
-        await conversation.endSession()
+        await conversation.endSession();
       } catch (err) {
-        console.error("Error ending session:", err)
-        setConversationState("idle") // Still set to idle even if there's an error ending
+        console.error("Error ending session:", err);
+        setConversationState("idle"); // Still set to idle even if there's an error ending
       }
     }
-  }
+  };
 
   // Clean up the conversation when component unmounts
   useEffect(() => {
@@ -117,26 +126,26 @@ export function LukeButton() {
       if (conversationRef.current && conversationState === "connected") {
         try {
           // @ts-ignore - we know this exists
-          conversationRef.current.endSession()
+          conversationRef.current.endSession();
         } catch (err) {
-          console.error("Error ending session during cleanup:", err)
+          console.error("Error ending session during cleanup:", err);
         }
       }
-    }
-  }, [conversationState])
+    };
+  }, [conversationState]);
 
   // Get button text based on state
   const getButtonText = () => {
     if (conversationState === "connecting") {
-      return <Loader2 className="h-4 w-4 animate-spin" />
+      return <Loader2 className="h-4 w-4 animate-spin" />;
     } else if (conversationState === "connected") {
-      return conversation.isSpeaking ? "Speaking..." : "Listening..."
+      return conversation.isSpeaking ? "Speaking..." : "Listening...";
     } else if (conversationState === "error") {
-      return "Try later"
+      return "Try later";
     } else {
-      return "talk to Luke"
+      return "talk to Luke";
     }
-  }
+  };
 
   return (
     <button
@@ -156,7 +165,9 @@ export function LukeButton() {
       disabled={conversationState === "connecting"}
       title={errorMessage || undefined}
     >
-      <span className="relative z-10 flex items-center justify-center whitespace-nowrap">{getButtonText()}</span>
+      <span className="relative z-10 flex items-center justify-center whitespace-nowrap">
+        {getButtonText()}
+      </span>
       <div
         className={cn(
           "absolute inset-0 -z-10 bg-gradient-to-br opacity-90 dark:opacity-100",
@@ -184,7 +195,10 @@ export function LukeButton() {
               : "bg-[radial-gradient(circle_at_50%_50%,rgba(22,219,192,0.8),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_50%,rgba(22,219,192,0.5),transparent_60%)]",
         )}
         style={{
-          animation: conversationState !== "error" ? "pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite" : "none",
+          animation:
+            conversationState !== "error"
+              ? "pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+              : "none",
         }}
       />
       <div
@@ -197,8 +211,14 @@ export function LukeButton() {
               : "bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.8),transparent_40%)]",
         )}
         style={{
-          left: conversationState !== "error" ? `calc(${mousePosition.x}px - 50%)` : "50%",
-          top: conversationState !== "error" ? `calc(${mousePosition.y}px - 50%)` : "50%",
+          left:
+            conversationState !== "error"
+              ? `calc(${mousePosition.x}px - 50%)`
+              : "50%",
+          top:
+            conversationState !== "error"
+              ? `calc(${mousePosition.y}px - 50%)`
+              : "50%",
           width: "100%",
           height: "100%",
           transform: "translate(-50%, -50%)",
@@ -207,15 +227,26 @@ export function LukeButton() {
       />
       <style jsx>{`
         @keyframes gradient-shift {
-          0% { background-position: 0% 50% }
-          50% { background-position: 100% 50% }
-          100% { background-position: 0% 50% }
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
         }
         @keyframes pulse {
-          0%, 100% { opacity: 0.7 }
-          50% { opacity: 0.3 }
+          0%,
+          100% {
+            opacity: 0.7;
+          }
+          50% {
+            opacity: 0.3;
+          }
         }
       `}</style>
     </button>
-  )
+  );
 }
