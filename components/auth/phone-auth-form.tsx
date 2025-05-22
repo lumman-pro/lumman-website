@@ -168,7 +168,7 @@ export function PhoneAuthForm() {
         } = supabase.auth.onAuthStateChange((event, session) => {
           console.log("Auth state changed:", event, "Session exists:", !!session)
           
-          if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+          if (event === 'SIGNED_IN' && session?.user) {
             // Now we have confirmation that the session is fully established
             console.log("Session fully established with event:", event, "redirecting to:", redirectTo)
             
@@ -194,40 +194,8 @@ export function PhoneAuthForm() {
         // Store the subscription reference for cleanup if component unmounts
         authSubscriptionRef.current = subscription
         
-        // Add a fallback mechanism to handle cases where the expected auth event doesn't fire
-        // This ensures users don't get stuck with an infinite loading spinner
-        const checkSessionDirectly = async () => {
-          try {
-            const { data: sessionData } = await supabase.auth.getSession()
-            console.log("Fallback: Direct session check result:", !!sessionData?.session)
-            
-            // If we have a valid session with a user and the component is still mounted (loading)
-            if (sessionData?.session?.user && isLoading) {
-              console.log("Fallback: Session check successful, redirecting to:", redirectTo)
-              
-              // Clean up the subscription if it still exists
-              if (authSubscriptionRef.current) {
-                authSubscriptionRef.current.unsubscribe()
-                authSubscriptionRef.current = null
-              }
-              
-              // Clear the timeout reference
-              authTimeoutRef.current = null
-              
-              // Reset loading state and redirect
-              setIsLoading(false)
-              submitAttemptRef.current = false
-              
-              // Redirect to the dashboard or specified redirect URL
-              router.push(redirectTo)
-            }
-          } catch (err) {
-            console.error("Error in fallback session check:", err)
-          }
-        }
-        
-        // Set a timeout to check the session directly if the auth state change event hasn't fired
-        authTimeoutRef.current = setTimeout(checkSessionDirectly, 2000)
+        // We're relying solely on the onAuthStateChange listener for redirection
+        // No fallback mechanism is needed as per requirements
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.")
