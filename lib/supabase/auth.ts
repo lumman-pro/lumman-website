@@ -32,6 +32,7 @@ export async function verifyOtp(phone: string, token: string) {
   try {
     console.log(`Verifying OTP for phone: ${phone} with token length: ${token.length}`)
 
+    // Выполняем верификацию OTP
     const { data, error } = await supabase.auth.verifyOtp({
       phone,
       token,
@@ -51,6 +52,41 @@ export async function verifyOtp(phone: string, token: string) {
       }
 
       throw error
+    }
+
+    // Проверяем, есть ли данные пользователя и сессии
+    if (!data?.user || !data?.session) {
+      console.log("OTP verification successful but no user data returned, fetching user data explicitly")
+      
+      // Явно запрашиваем данные пользователя, так как верификация прошла успешно
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      
+      if (userError) {
+        console.error("Error fetching user data after OTP verification:", userError)
+        throw userError
+      }
+      
+      if (!userData?.user) {
+        console.error("No user data returned after explicit getUser() call")
+        throw new Error("Authentication failed: Unable to retrieve user data")
+      }
+      
+      // Получаем текущую сессию
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError) {
+        console.error("Error fetching session after OTP verification:", sessionError)
+        throw sessionError
+      }
+      
+      // Возвращаем полученные данные пользователя и сессии
+      return { 
+        data: { 
+          user: userData.user, 
+          session: sessionData.session 
+        }, 
+        error: null 
+      }
     }
 
     return { data, error: null }

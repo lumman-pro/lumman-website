@@ -67,6 +67,30 @@ export async function middleware(request: NextRequest) {
       })
       // Continue without session on error, but log detailed information
     }
+    
+    // Если сессия пустая, но есть куки аутентификации, попробуем явно получить пользователя
+    if (!session && request.cookies.has("lumman-auth")) {
+      console.log("Session is empty but auth cookie exists, trying to get user explicitly")
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+        
+        if (userError) {
+          console.error("Error getting user in middleware:", userError)
+        } else if (userData?.user) {
+          console.log("Successfully retrieved user data in middleware")
+          // Если пользователь получен, но сессия отсутствует, попробуем обновить сессию
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+          
+          if (refreshError) {
+            console.error("Error refreshing session in middleware:", refreshError)
+          } else if (refreshData?.session) {
+            console.log("Successfully refreshed session in middleware")
+          }
+        }
+      } catch (userError) {
+        console.error("Unexpected error getting user in middleware:", userError)
+      }
+    }
 
     // Debug logging for authentication state
     console.log(`Middleware: Path=${request.nextUrl.pathname}, Authenticated=${!!session}`)

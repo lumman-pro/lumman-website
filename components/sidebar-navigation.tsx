@@ -44,7 +44,8 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   }
 
   const handleNewChat = () => {
-    router.push("/dashboard/new")
+    // Redirect to dashboard page
+    router.push("/dashboard")
     onClose()
   }
 
@@ -91,6 +92,11 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
                 >
                   <div className="flex flex-col items-start">
                     <span className="truncate w-full text-left">{conversation.chat_name || "Untitled Chat"}</span>
+                    {conversation.chat_summary && (
+                      <span className="text-xs text-muted-foreground mt-1 truncate w-full">
+                        {conversation.chat_summary.substring(0, 40)}...
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground mt-1">
                       {formatDate(new Date(conversation.created_at))}
                     </span>
