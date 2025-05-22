@@ -1,4 +1,4 @@
-import { PostCardSkeleton } from "@/components/insights/post-card-skeleton"
+import { PostCardSkeleton } from "@/components/insights/post-card-skeleton";
 
 export default function CategoryLoading() {
   return (
@@ -22,5 +22,5 @@ export default function CategoryLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

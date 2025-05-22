@@ -1,10 +1,10 @@
-import type { Metadata } from "next"
-import { LegalTabs } from "@/components/legal/legal-tabs"
+import type { Metadata } from "next";
+import { LegalTabs } from "@/components/legal/legal-tabs";
 
 export const metadata: Metadata = {
   title: "Legal | Lumman.ai",
   description: "Legal information, terms of use, and privacy policy",
-}
+};
 
 export default function LegalPage() {
   return (
@@ -14,5 +14,5 @@ export default function LegalPage() {
       </h1>
       <LegalTabs />
     </div>
-  )
+  );
 }

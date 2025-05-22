@@ -1,9 +1,9 @@
-import Link from "next/link"
-import { formatDate } from "@/lib/utils"
-import type { Post } from "@/lib/insights"
+import Link from "next/link";
+import { formatDate } from "@/lib/utils";
+import type { Post } from "@/lib/insights";
 
 interface PostCardProps {
-  post: Post
+  post: Post;
 }
 
 export function PostCard({ post }: PostCardProps) {
@@ -25,7 +25,11 @@ export function PostCard({ post }: PostCardProps) {
       </Link>
 
       <div className="flex items-center text-sm text-muted-foreground">
-        {post.published_at && <time dateTime={post.published_at}>{formatDate(new Date(post.published_at))}</time>}
+        {post.published_at && (
+          <time dateTime={post.published_at}>
+            {formatDate(new Date(post.published_at))}
+          </time>
+        )}
 
         {post.categories && post.categories.length > 0 && (
           <>
@@ -51,5 +55,5 @@ export function PostCard({ post }: PostCardProps) {
         </p>
       )}
     </article>
-  )
+  );
 }

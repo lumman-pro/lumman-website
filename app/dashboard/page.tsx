@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { useChats } from "@/hooks/use-data-fetching"
-import { MessageSquarePlus } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-import { LukeButton } from "@/components/luke-button"
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { useChats } from "@/hooks/use-data-fetching";
+import { MessageSquarePlus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { LukeButton } from "@/components/luke-button";
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
 
   // Use React Query hooks
-  const { data: chatsData, isLoading } = useChats({ limit: 5 })
+  const { data: chatsData, isLoading } = useChats({ limit: 5 });
 
   return (
     <div className="container max-w-4xl py-12 md:py-24">
@@ -31,7 +31,8 @@ export default function DashboardPage() {
             <MessageSquarePlus className="h-12 w-12 text-primary" />
             <h2 className="text-xl font-semibold">Start a New Conversation</h2>
             <p className="text-muted-foreground">
-              Begin a fresh conversation with Luke about your business challenges.
+              Begin a fresh conversation with Luke about your business
+              challenges.
             </p>
             <LukeButton />
           </div>
@@ -56,7 +57,9 @@ export default function DashboardPage() {
                     onClick={() => router.push(`/dashboard/chat/${chat.id}`)}
                   >
                     <div className="flex flex-col items-start">
-                      <span className="font-medium">{chat.chat_name || "Untitled Chat"}</span>
+                      <span className="font-medium">
+                        {chat.chat_name || "Untitled Chat"}
+                      </span>
                       {chat.chat_summary && (
                         <span className="text-xs text-muted-foreground mt-1 truncate max-w-full">
                           {chat.chat_summary.substring(0, 60)}...
@@ -71,5 +74,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

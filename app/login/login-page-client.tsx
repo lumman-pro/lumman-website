@@ -1,19 +1,23 @@
-"use client"
+"use client";
 
-import { PhoneAuthForm } from "@/components/auth/phone-auth-form"
-import { useTheme } from "next-themes"
-import { useEffect, useState, Suspense } from "react"
+import { PhoneAuthForm } from "@/components/auth/phone-auth-form";
+import { useTheme } from "next-themes";
+import { useEffect, useState, Suspense } from "react";
 
 export default function LoginPageClient() {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   // Use absolute URLs to ensure the images are found
-  const logoSrc = mounted ? (resolvedTheme === "dark" ? "/lumman_white.svg" : "/lumman_black.svg") : null
+  const logoSrc = mounted
+    ? resolvedTheme === "dark"
+      ? "/lumman_white.svg"
+      : "/lumman_black.svg"
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -36,12 +40,12 @@ export default function LoginPageClient() {
         </Suspense>
       </div>
     </div>
-  )
+  );
 }
 
 // Separate component that uses useSearchParams
 function AuthFormWrapper() {
-  return <PhoneAuthForm />
+  return <PhoneAuthForm />;
 }
 
 // Skeleton loader for the auth form
@@ -52,5 +56,5 @@ function AuthFormSkeleton() {
       <div className="h-10 w-full bg-muted animate-pulse rounded-md" />
       <div className="h-10 w-3/4 mx-auto bg-muted animate-pulse rounded-md mt-6" />
     </div>
-  )
+  );
 }

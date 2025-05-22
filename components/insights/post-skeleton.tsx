@@ -28,5 +28,5 @@ export function PostSkeleton() {
         <div className="h-4 bg-muted animate-pulse w-5/6 rounded"></div>
       </div>
     </div>
-  )
+  );
 }

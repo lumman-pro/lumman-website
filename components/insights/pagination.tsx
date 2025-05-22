@@ -1,80 +1,88 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface PaginationProps {
-  totalPages: number
-  currentPage: number
-  basePath: string
-  onPageChange?: (page: number) => void
+  totalPages: number;
+  currentPage: number;
+  basePath: string;
+  onPageChange?: (page: number) => void;
 }
 
-export function Pagination({ totalPages, currentPage, basePath, onPageChange }: PaginationProps) {
+export function Pagination({
+  totalPages,
+  currentPage,
+  basePath,
+  onPageChange,
+}: PaginationProps) {
   if (totalPages <= 1) {
-    return null
+    return null;
   }
 
   // Generate page numbers to display
   const getPageNumbers = () => {
-    const pages = []
-    const maxPagesToShow = 5
+    const pages = [];
+    const maxPagesToShow = 5;
 
     if (totalPages <= maxPagesToShow) {
       // If total pages is less than or equal to max pages to show, display all pages
       for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
+        pages.push(i);
       }
     } else {
       // Always include first page
-      pages.push(1)
+      pages.push(1);
 
       // Calculate start and end of page range
-      let startPage = Math.max(2, currentPage - 1)
-      let endPage = Math.min(totalPages - 1, currentPage + 1)
+      let startPage = Math.max(2, currentPage - 1);
+      let endPage = Math.min(totalPages - 1, currentPage + 1);
 
       // Adjust if we're at the start or end
       if (currentPage <= 2) {
-        endPage = 3
+        endPage = 3;
       } else if (currentPage >= totalPages - 1) {
-        startPage = totalPages - 2
+        startPage = totalPages - 2;
       }
 
       // Add ellipsis if needed
       if (startPage > 2) {
-        pages.push(-1) // -1 represents ellipsis
+        pages.push(-1); // -1 represents ellipsis
       }
 
       // Add middle pages
       for (let i = startPage; i <= endPage; i++) {
-        pages.push(i)
+        pages.push(i);
       }
 
       // Add ellipsis if needed
       if (endPage < totalPages - 1) {
-        pages.push(-2) // -2 represents ellipsis
+        pages.push(-2); // -2 represents ellipsis
       }
 
       // Always include last page
-      pages.push(totalPages)
+      pages.push(totalPages);
     }
 
-    return pages
-  }
+    return pages;
+  };
 
-  const pageNumbers = getPageNumbers()
+  const pageNumbers = getPageNumbers();
 
   const renderPageLink = (pageNumber: number, label?: string) => {
-    const isCurrentPage = pageNumber === currentPage
-    const isEllipsis = pageNumber < 0
+    const isCurrentPage = pageNumber === currentPage;
+    const isEllipsis = pageNumber < 0;
 
     if (isEllipsis) {
       return (
-        <span key={`ellipsis-${pageNumber}`} className="px-3 py-2 text-muted-foreground">
+        <span
+          key={`ellipsis-${pageNumber}`}
+          className="px-3 py-2 text-muted-foreground"
+        >
           ...
         </span>
-      )
+      );
     }
 
     if (onPageChange) {
@@ -90,7 +98,7 @@ export function Pagination({ totalPages, currentPage, basePath, onPageChange }: 
         >
           {label || pageNumber}
         </Button>
-      )
+      );
     } else {
       // Server-side pagination
       return (
@@ -107,9 +115,9 @@ export function Pagination({ totalPages, currentPage, basePath, onPageChange }: 
             {label || pageNumber}
           </Button>
         </Link>
-      )
+      );
     }
-  }
+  };
 
   return (
     <nav className="flex justify-center" aria-label="Pagination">
@@ -117,11 +125,18 @@ export function Pagination({ totalPages, currentPage, basePath, onPageChange }: 
         {/* Previous page */}
         {currentPage > 1 ? (
           onPageChange ? (
-            <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => onPageChange(currentPage - 1)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-4"
+              onClick={() => onPageChange(currentPage - 1)}
+            >
               Previous
             </Button>
           ) : (
-            <Link href={`${basePath}${currentPage > 2 ? `?page=${currentPage - 1}` : ""}`}>
+            <Link
+              href={`${basePath}${currentPage > 2 ? `?page=${currentPage - 1}` : ""}`}
+            >
               <Button variant="outline" size="sm" className="h-9 px-4">
                 Previous
               </Button>
@@ -134,12 +149,19 @@ export function Pagination({ totalPages, currentPage, basePath, onPageChange }: 
         )}
 
         {/* Page numbers */}
-        <div className="flex items-center">{pageNumbers.map((pageNumber) => renderPageLink(pageNumber))}</div>
+        <div className="flex items-center">
+          {pageNumbers.map((pageNumber) => renderPageLink(pageNumber))}
+        </div>
 
         {/* Next page */}
         {currentPage < totalPages ? (
           onPageChange ? (
-            <Button variant="outline" size="sm" className="h-9 px-4" onClick={() => onPageChange(currentPage + 1)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-4"
+              onClick={() => onPageChange(currentPage + 1)}
+            >
               Next
             </Button>
           ) : (
@@ -156,5 +178,5 @@ export function Pagination({ totalPages, currentPage, basePath, onPageChange }: 
         )}
       </div>
     </nav>
-  )
+  );
 }

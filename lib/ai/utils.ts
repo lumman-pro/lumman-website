@@ -1,6 +1,6 @@
-import { generateText, streamText } from "ai"
-import { models, defaultSystemPrompt } from "./config"
-import type { GenerateTextOptions, StreamTextOptions } from "@/types/ai"
+import { generateText, streamText } from "ai";
+import { models, defaultSystemPrompt } from "./config";
+import type { GenerateTextOptions, StreamTextOptions } from "@/types/ai";
 
 /**
  * Generate text using the AI SDK
@@ -15,15 +15,15 @@ export async function generateAIResponse({
       model,
       prompt,
       system,
-    })
+    });
 
-    return { text, error: null }
+    return { text, error: null };
   } catch (error) {
-    console.error("Error generating AI response:", error)
+    console.error("Error generating AI response:", error);
     return {
       text: null,
       error: error instanceof Error ? error.message : "Unknown error occurred",
-    }
+    };
   }
 }
 
@@ -44,14 +44,14 @@ export function streamAIResponse({
       system,
       onChunk,
       onFinish,
-    })
+    });
 
-    return { result, error: null }
+    return { result, error: null };
   } catch (error) {
-    console.error("Error streaming AI response:", error)
+    console.error("Error streaming AI response:", error);
     return {
       result: null,
       error: error instanceof Error ? error.message : "Unknown error occurred",
-    }
+    };
   }
 }

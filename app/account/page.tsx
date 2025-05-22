@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useUserData, useUpdateUserProfile } from "@/hooks/use-data-fetching"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { DeleteAccountModal } from "@/components/account/delete-account-modal"
+import { useState } from "react";
+import { useUserData, useUpdateUserProfile } from "@/hooks/use-data-fetching";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { DeleteAccountModal } from "@/components/account/delete-account-modal";
 
 export default function AccountPage() {
-  const { data: profile, isLoading, error } = useUserData()
-  const updateProfileMutation = useUpdateUserProfile()
-  const { toast } = useToast()
+  const { data: profile, isLoading, error } = useUserData();
+  const updateProfileMutation = useUpdateUserProfile();
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     user_name: "",
     user_email: "",
     company_name: "",
     company_url: "",
-  })
-  const [isEditing, setIsEditing] = useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Update form data when profile is loaded
   useState(() => {
@@ -32,14 +32,14 @@ export default function AccountPage() {
         user_email: profile.user_email || "",
         company_name: profile.company_name || "",
         company_url: profile.company_url || "",
-      })
+      });
     }
-  })
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -50,14 +50,14 @@ export default function AccountPage() {
           user_email: profile.user_email || "",
           company_name: profile.company_name || "",
           company_url: profile.company_url || "",
-        })
+        });
       }
     }
-    setIsEditing(!isEditing)
-  }
+    setIsEditing(!isEditing);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
       await updateProfileMutation.mutateAsync({
@@ -65,21 +65,22 @@ export default function AccountPage() {
         user_email: formData.user_email || null,
         company_name: formData.company_name || null,
         company_url: formData.company_url || null,
-      })
+      });
 
-      setIsEditing(false)
+      setIsEditing(false);
       toast({
         title: "Success",
         description: "Your profile has been updated.",
-      })
+      });
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update profile",
+        description:
+          error instanceof Error ? error.message : "Failed to update profile",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -100,7 +101,7 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -110,7 +111,7 @@ export default function AccountPage() {
           {error instanceof Error ? error.message : "Failed to load profile"}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -120,7 +121,10 @@ export default function AccountPage() {
           <h1 className="text-3xl font-bold tracking-tighter md:text-4xl text-foreground transition-colors duration-300 ease-in-out">
             Account Settings
           </h1>
-          <Button variant={isEditing ? "outline" : "default"} onClick={handleEditToggle}>
+          <Button
+            variant={isEditing ? "outline" : "default"}
+            onClick={handleEditToggle}
+          >
             {isEditing ? "Cancel" : "Edit Profile"}
           </Button>
         </div>
@@ -187,13 +191,19 @@ export default function AccountPage() {
 
         <div className="pt-6 border-t border-border">
           <h2 className="text-xl font-semibold mb-4">Account Management</h2>
-          <Button variant="destructive" onClick={() => setIsDeleteModalOpen(true)}>
+          <Button
+            variant="destructive"
+            onClick={() => setIsDeleteModalOpen(true)}
+          >
             Delete Account
           </Button>
         </div>
       </div>
 
-      <DeleteAccountModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} />
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </div>
-  )
+  );
 }

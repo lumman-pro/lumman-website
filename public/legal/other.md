@@ -19,12 +19,12 @@ Lumman.ai uses cookies for the following purposes:
 
 ### Types of Cookies We Use
 
-| Cookie Name | Purpose | Duration |
-|-------------|---------|----------|
-| session_id | Maintains your session | Session |
-| _ga | Google Analytics tracking | 2 years |
-| _gid | Google Analytics tracking | 24 hours |
-| preferences | Stores your preferences | 1 year |
+| Cookie Name | Purpose                   | Duration |
+| ----------- | ------------------------- | -------- |
+| session_id  | Maintains your session    | Session  |
+| \_ga        | Google Analytics tracking | 2 years  |
+| \_gid       | Google Analytics tracking | 24 hours |
+| preferences | Stores your preferences   | 1 year   |
 
 ### Managing Cookies
 
@@ -43,6 +43,7 @@ Lumman.ai is partially conformant with WCAG 2.1 level AA. Partially conformant m
 ### Feedback
 
 We welcome your feedback on the accessibility of Lumman.ai. Please let us know if you encounter accessibility barriers on our website:
+
 - Email: accessibility@lumman.ai
 - Phone: +44 20 1234 5678
 

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { createBrowserSupabaseClient } from "./client"
+import { createBrowserSupabaseClient } from "./client";
 
 export async function signInWithPhone(phone: string) {
-  const supabase = createBrowserSupabaseClient()
+  const supabase = createBrowserSupabaseClient();
 
   try {
     const { data, error } = await supabase.auth.signInWithOtp({
@@ -11,127 +11,169 @@ export async function signInWithPhone(phone: string) {
       options: {
         emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
-    })
+    });
 
-    if (error) throw error
-    return { data, error: null }
+    if (error) throw error;
+    return { data, error: null };
   } catch (error) {
-    console.error("Error in signInWithPhone:", error instanceof Error ? error.message : error)
+    console.error(
+      "Error in signInWithPhone:",
+      error instanceof Error ? error.message : error,
+    );
     return {
       data: null,
       error: {
-        message: error instanceof Error ? error.message : "Failed to send verification code. Please try again.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to send verification code. Please try again.",
       },
-    }
+    };
   }
 }
 
 export async function verifyOtp(phone: string, token: string) {
-  const supabase = createBrowserSupabaseClient()
+  const supabase = createBrowserSupabaseClient();
 
   try {
-    console.log(`Verifying OTP for phone: ${phone} with token length: ${token.length}`)
+    console.log(
+      `Verifying OTP for phone: ${phone} with token length: ${token.length}`,
+    );
 
     // Выполняем верификацию OTP
     const { data, error } = await supabase.auth.verifyOtp({
       phone,
       token,
       type: "sms",
-    })
+    });
 
-    console.log("OTP verification response:", { data, error })
+    console.log("OTP verification response:", { data, error });
 
     if (error) {
       // Handle specific error codes
       if (error.message.includes("Token has expired")) {
-        return { data: null, error: { message: "Verification code has expired. Please request a new one." } }
+        return {
+          data: null,
+          error: {
+            message: "Verification code has expired. Please request a new one.",
+          },
+        };
       }
 
       if (error.message.includes("Invalid token")) {
-        return { data: null, error: { message: "Invalid verification code. Please check and try again." } }
+        return {
+          data: null,
+          error: {
+            message: "Invalid verification code. Please check and try again.",
+          },
+        };
       }
 
-      throw error
+      throw error;
     }
 
     // Проверяем, есть ли данные пользователя и сессии
     if (!data?.user || !data?.session) {
-      console.log("OTP verification successful but no user data returned, fetching user data explicitly")
-      
+      console.log(
+        "OTP verification successful but no user data returned, fetching user data explicitly",
+      );
+
       // Явно запрашиваем данные пользователя, так как верификация прошла успешно
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-      
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser();
+
       if (userError) {
-        console.error("Error fetching user data after OTP verification:", userError)
-        throw userError
+        console.error(
+          "Error fetching user data after OTP verification:",
+          userError,
+        );
+        throw userError;
       }
-      
+
       if (!userData?.user) {
-        console.error("No user data returned after explicit getUser() call")
-        throw new Error("Authentication failed: Unable to retrieve user data")
+        console.error("No user data returned after explicit getUser() call");
+        throw new Error("Authentication failed: Unable to retrieve user data");
       }
-      
+
       // Получаем текущую сессию
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+
       if (sessionError) {
-        console.error("Error fetching session after OTP verification:", sessionError)
-        throw sessionError
+        console.error(
+          "Error fetching session after OTP verification:",
+          sessionError,
+        );
+        throw sessionError;
       }
-      
+
       // Возвращаем полученные данные пользователя и сессии
-      return { 
-        data: { 
-          user: userData.user, 
-          session: sessionData.session 
-        }, 
-        error: null 
-      }
+      return {
+        data: {
+          user: userData.user,
+          session: sessionData.session,
+        },
+        error: null,
+      };
     }
 
-    return { data, error: null }
+    return { data, error: null };
   } catch (err) {
-    console.error("Unexpected error during OTP verification:", err instanceof Error ? err.message : err)
+    console.error(
+      "Unexpected error during OTP verification:",
+      err instanceof Error ? err.message : err,
+    );
     return {
       data: null,
       error: {
         message:
-          err instanceof Error ? err.message : "An unexpected error occurred during verification. Please try again.",
+          err instanceof Error
+            ? err.message
+            : "An unexpected error occurred during verification. Please try again.",
       },
-    }
+    };
   }
 }
 
 export async function signOut() {
-  const supabase = createBrowserSupabaseClient()
+  const supabase = createBrowserSupabaseClient();
 
   try {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    return { error: null }
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { error: null };
   } catch (error) {
-    console.error("Error signing out:", error instanceof Error ? error.message : error)
+    console.error(
+      "Error signing out:",
+      error instanceof Error ? error.message : error,
+    );
     return {
       error: {
-        message: error instanceof Error ? error.message : "Failed to sign out. Please try again.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to sign out. Please try again.",
       },
-    }
+    };
   }
 }
 
 export async function getCurrentUser() {
-  const supabase = createBrowserSupabaseClient()
+  const supabase = createBrowserSupabaseClient();
 
   try {
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
-    if (error) throw error
-    return user
+    if (error) throw error;
+    return user;
   } catch (error) {
-    console.error("Error getting current user:", error instanceof Error ? error.message : error)
-    return null
+    console.error(
+      "Error getting current user:",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
   }
 }
