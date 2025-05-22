@@ -158,44 +158,35 @@ export function PhoneAuthForm() {
           description: "You have been successfully signed in.",
         })
 
-        // Instead of immediately redirecting, we'll set up a listener for auth state change
-        // The redirect will happen only after Supabase has fully initialized the session
-        setIsLoading(true) // Keep loading state active until redirect happens
+        // Поскольку у нас уже есть данные пользователя и сессии из ответа verifyOtp,
+        // мы можем сразу перенаправить пользователя без ожидания события SIGNED_IN
+        console.log("Authentication successful, redirecting to:", redirectTo)
         
-        // Set up a one-time auth state change listener
+        // Для надежности, также установим слушатель события onAuthStateChange,
+        // но не будем блокировать UI в ожидании этого события
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
           console.log("Auth state changed:", event, "Session exists:", !!session)
           
           if (event === 'SIGNED_IN' && session?.user) {
-            // Now we have confirmation that the session is fully established
-            console.log("Session fully established with event:", event, "redirecting to:", redirectTo)
+            console.log("Session fully established with event:", event)
             
             // Clean up the subscription
             subscription.unsubscribe()
             authSubscriptionRef.current = null
-            
-            // Clear the fallback timeout
-            if (authTimeoutRef.current) {
-              clearTimeout(authTimeoutRef.current)
-              authTimeoutRef.current = null
-            }
-            
-            // Reset loading state and redirect
-            setIsLoading(false)
-            submitAttemptRef.current = false
-            
-            // Redirect to the dashboard or specified redirect URL
-            router.push(redirectTo)
           }
         })
         
         // Store the subscription reference for cleanup if component unmounts
         authSubscriptionRef.current = subscription
         
-        // We're relying solely on the onAuthStateChange listener for redirection
-        // No fallback mechanism is needed as per requirements
+        // Reset loading state
+        setIsLoading(false)
+        submitAttemptRef.current = false
+        
+        // Redirect to the dashboard or specified redirect URL immediately
+        router.push(redirectTo)
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.")
