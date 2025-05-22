@@ -114,7 +114,7 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
 
         {/* Right: Navigation - same for both authenticated and non-authenticated users */}
         <nav className="flex items-center space-x-6">
-          <Link
+          {/*<Link
             href="/insights"
             className={cn(
               "text-sm transition-colors duration-300 ease-in-out font-medium",
@@ -135,7 +135,7 @@ export function Header({ onMenuToggle, isMenuOpen }: { onMenuToggle?: () => void
                 <span className="sr-only">{isAuthenticated ? "Dashboard" : "Sign in"}</span>
               </Button>
             </Link>
-          )}
+          )}*/}
         </nav>
       </div>
     </header>
