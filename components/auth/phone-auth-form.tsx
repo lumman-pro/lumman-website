@@ -127,6 +127,10 @@ export function PhoneAuthForm() {
 
       if (error) {
         setError(error.message)
+      } else if (!data?.user || !data?.session) {
+        // Проверяем наличие данных пользователя и сессии
+        console.error("Authentication successful but no user data returned")
+        setError("Authentication failed: Unable to retrieve user data. Please try again.")
       } else {
         // Clear any timers
         if (timerRef.current) {
@@ -134,6 +138,13 @@ export function PhoneAuthForm() {
           timerRef.current = null
         }
 
+        // Показываем уведомление об успешной аутентификации
+        toast({
+          title: "Authentication successful",
+          description: "You have been successfully signed in.",
+        })
+
+        // Перенаправляем пользователя
         router.push(redirectTo)
       }
     } catch (err) {
