@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useChats, useCreateChat } from "@/hooks/use-data-fetching"
-import { MessageSquarePlus } from "lucide-react"
+import { useChats } from "@/hooks/use-data-fetching"
+import { MessageSquarePlus, ExternalLink } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function DashboardPage() {
@@ -12,19 +12,17 @@ export default function DashboardPage() {
 
   // Use React Query hooks
   const { data: chatsData, isLoading } = useChats({ limit: 5 })
-  const createChatMutation = useCreateChat()
 
-  const handleNewChat = async () => {
-    try {
-      const newChat = await createChatMutation.mutateAsync("New Chat")
-      router.push(`/dashboard/chat/${newChat.id}`)
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create new chat",
-        variant: "destructive",
-      })
-    }
+  const handleNewChatRedirect = () => {
+    // Show a toast message explaining that chat creation is now handled externally
+    toast({
+      title: "External Chat Creation",
+      description: "New chats are now created through the external system.",
+    })
+    
+    // In a real implementation, this would redirect to an external system
+    // For now, we'll just show a message
+    window.open("https://lumman.ai/new-chat", "_blank")
   }
 
   return (
@@ -35,7 +33,7 @@ export default function DashboardPage() {
             Dashboard
           </h1>
           <p className="text-muted-foreground text-base font-medium transition-colors duration-300 ease-in-out">
-            Start a conversation with Luke or continue where you left off.
+            View your conversations with Luke or start a new one through our external system.
           </p>
         </div>
 
@@ -46,8 +44,9 @@ export default function DashboardPage() {
             <p className="text-muted-foreground">
               Begin a fresh conversation with Luke about your business challenges.
             </p>
-            <Button onClick={handleNewChat} disabled={createChatMutation.isPending}>
-              {createChatMutation.isPending ? "Creating..." : "New Conversation"}
+            <Button onClick={handleNewChatRedirect}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Start in External System
             </Button>
           </div>
 
@@ -70,7 +69,14 @@ export default function DashboardPage() {
                     className="w-full justify-start text-left h-auto py-2"
                     onClick={() => router.push(`/dashboard/chat/${chat.id}`)}
                   >
-                    {chat.chat_name || "Untitled Chat"}
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{chat.chat_name || "Untitled Chat"}</span>
+                      {chat.chat_summary && (
+                        <span className="text-xs text-muted-foreground mt-1 truncate max-w-full">
+                          {chat.chat_summary.substring(0, 60)}...
+                        </span>
+                      )}
+                    </div>
                   </Button>
                 ))}
               </div>

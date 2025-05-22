@@ -12,22 +12,14 @@ interface Chat {
   chat_name: string
   created_at: string
   user_id: string
-  last_message_at: string | null
-  is_archived: boolean
-}
-
-interface ChatMessage {
-  id: string
-  chat_id: string
-  content: string
-  role: string
-  created_at: string
+  chat_summary: string | null
+  chat_duration: number | null
+  chat_transcription: string | null
 }
 
 interface FetchChatsOptions {
   limit?: number
   offset?: number
-  includeArchived?: boolean
 }
 
 interface FetchInsightsOptions {
@@ -145,10 +137,9 @@ export function useUpdateUserProfile() {
 export function useChats(options?: FetchChatsOptions) {
   const limit = options?.limit || 20
   const offset = options?.offset || 0
-  const includeArchived = options?.includeArchived || false
 
   return useQuery({
-    queryKey: ["chats", limit, offset, includeArchived],
+    queryKey: ["chats", limit, offset],
     queryFn: async () => {
       try {
         const {
@@ -159,17 +150,10 @@ export function useChats(options?: FetchChatsOptions) {
         if (userError) throw userError
         if (!user) throw new Error("User not authenticated")
 
-        let query = supabase
+        const { data, error, count } = await supabase
           .from("chats")
-          .select("id, chat_name, created_at, user_id, last_message_at, is_archived", { count: "exact" })
+          .select("id, chat_name, created_at, user_id, chat_summary", { count: "exact" })
           .eq("user_id", user.id)
-
-        if (!includeArchived) {
-          query = query.eq("is_archived", false)
-        }
-
-        const { data, error, count } = await query
-          .order("last_message_at", { ascending: false, nullsFirst: false })
           .order("created_at", { ascending: false })
           .range(offset, offset + limit - 1)
 
@@ -189,14 +173,14 @@ export function useChats(options?: FetchChatsOptions) {
   })
 }
 
-// Chat messages hook
-export function useChatMessages(chatId: string, limit = 50) {
+// Chat details hook
+export function useChatMessages(chatId: string) {
   return useQuery({
-    queryKey: ["chatMessages", chatId, limit],
+    queryKey: ["chatDetails", chatId],
     queryFn: async () => {
       try {
         if (!chatId) {
-          return { messages: [], count: 0 }
+          return { chat: null }
         }
 
         const {
@@ -207,10 +191,10 @@ export function useChatMessages(chatId: string, limit = 50) {
         if (userError) throw userError
         if (!user) throw new Error("User not authenticated")
 
-        // First verify the user owns this chat
+        // Get the chat details
         const { data: chatData, error: chatError } = await supabase
           .from("chats")
-          .select("id")
+          .select("*")
           .eq("id", chatId)
           .eq("user_id", user.id)
           .single()
@@ -222,208 +206,52 @@ export function useChatMessages(chatId: string, limit = 50) {
           throw chatError
         }
 
-        const { data, error, count } = await supabase
-          .from("chat_messages")
-          .select("*", { count: "exact" })
-          .eq("chat_id", chatId)
-          .order("created_at", { ascending: false })
-          .limit(limit)
-
-        if (error) {
-          throw error
-        }
-
         return {
-          messages: (data as ChatMessage[]).reverse(), // Reverse to get chronological order
-          count: count || 0,
+          chat: chatData as Chat,
+          // For backward compatibility with the UI, we'll create a dummy messages array
+          messages: [
+            {
+              id: "system-message",
+              chat_id: chatId,
+              content: chatData.chat_summary || "No summary available for this chat.",
+              role: "system",
+              created_at: chatData.created_at,
+            }
+          ]
         }
       } catch (err) {
-        console.error("Error fetching chat messages:", err)
-        throw new Error(handleSupabaseError(err, "useChatMessages", "Failed to load chat messages"))
+        console.error("Error fetching chat details:", err)
+        throw new Error(handleSupabaseError(err, "useChatMessages", "Failed to load chat details"))
       }
     },
     enabled: !!chatId,
   })
 }
 
-// Create new chat mutation
+// Create new chat mutation - now just a placeholder that returns a dummy chat ID
+// The actual chat creation is handled by an external system
 export function useCreateChat() {
-  const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: async (chatName: string) => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-
-        if (userError) throw userError
-        if (!user) throw new Error("User not authenticated")
-
-        const { data, error } = await supabase
-          .from("chats")
-          .insert({
-            chat_name: chatName || "New Chat",
-            user_id: user.id,
-          })
-          .select("*")
-          .single()
-
-        if (error) {
-          throw error
-        }
-
-        return data as Chat
-      } catch (err) {
-        console.error("Error creating chat:", err)
-        throw new Error(handleSupabaseError(err, "useCreateChat", "Failed to create chat"))
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chats"] })
-    },
+    mutationFn: async (_chatName: string) => {
+      // This is a placeholder function that simulates the creation of a chat
+      // In reality, the chat will be created by an external system
+      // We just return a dummy chat ID to maintain compatibility with the UI
+      return {
+        id: "new-chat-placeholder",
+        chat_name: "New Chat",
+        created_at: new Date().toISOString(),
+        user_id: "placeholder",
+        chat_summary: "Your conversation with Luke will appear here soon.",
+        chat_duration: null,
+        chat_transcription: null
+      } as Chat
+    }
   })
 }
 
-// Add message to chat mutation
-export function useAddChatMessage() {
-  const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: async ({
-      chatId,
-      content,
-      role,
-    }: {
-      chatId: string
-      content: string
-      role: "user" | "assistant" | "system"
-    }) => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
 
-        if (userError) throw userError
-        if (!user) throw new Error("User not authenticated")
 
-        // First verify the user owns this chat
-        const { data: chatData, error: chatError } = await supabase
-          .from("chats")
-          .select("id")
-          .eq("id", chatId)
-          .eq("user_id", user.id)
-          .single()
-
-        if (chatError) {
-          if (chatError.code === "PGRST116") {
-            throw new Error("Chat not found or you don't have permission to access it")
-          }
-          throw chatError
-        }
-
-        // Add the message
-        const { data, error } = await supabase
-          .from("chat_messages")
-          .insert({
-            chat_id: chatId,
-            content,
-            role,
-          })
-          .select("*")
-          .single()
-
-        if (error) {
-          throw error
-        }
-
-        // Update the last_message_at timestamp
-        await supabase
-          .from("chats")
-          .update({
-            last_message_at: new Date().toISOString(),
-          })
-          .eq("id", chatId)
-          .eq("user_id", user.id)
-
-        return data as ChatMessage
-      } catch (err) {
-        console.error("Error adding chat message:", err)
-        throw new Error(handleSupabaseError(err, "useAddChatMessage", "Failed to add message"))
-      }
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["chatMessages", data.chat_id] })
-      queryClient.invalidateQueries({ queryKey: ["chats"] })
-    },
-  })
-}
-
-// Archive chat mutation
-export function useArchiveChat() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (chatId: string) => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-
-        if (userError) throw userError
-        if (!user) throw new Error("User not authenticated")
-
-        // First verify the user owns this chat
-        const { data: chatData, error: chatError } = await supabase
-          .from("chats")
-          .select("id")
-          .eq("id", chatId)
-          .eq("user_id", user.id)
-          .single()
-
-        if (chatError) {
-          if (chatError.code === "PGRST116") {
-            throw new Error("Chat not found or you don't have permission to access it")
-          }
-          throw chatError
-        }
-
-        // Archive the chat
-        const { data, error } = await supabase
-          .from("chats")
-          .update({
-            is_archived: true,
-          })
-          .eq("id", chatId)
-          .eq("user_id", user.id)
-          .select("*")
-          .single()
-
-        if (error) {
-          throw error
-        }
-
-        // Create an archive record
-        await supabase.from("chats_archive").insert({
-          chat_id: chatId,
-          user_id: user.id,
-          archived_at: new Date().toISOString(),
-        })
-
-        return data as Chat
-      } catch (err) {
-        console.error("Error archiving chat:", err)
-        throw new Error(handleSupabaseError(err, "useArchiveChat", "Failed to archive chat"))
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chats"] })
-    },
-  })
-}
 
 // Insights hooks
 export function useCategories() {

@@ -143,7 +143,6 @@ export interface Database {
           chat_name: string | null
           chat_summary: string | null
           chat_transcription: string | null
-          is_archived: boolean
         }
         Insert: {
           id?: string
@@ -153,7 +152,6 @@ export interface Database {
           chat_name?: string | null
           chat_summary?: string | null
           chat_transcription?: string | null
-          is_archived?: boolean
         }
         Update: {
           id?: string
@@ -163,54 +161,10 @@ export interface Database {
           chat_name?: string | null
           chat_summary?: string | null
           chat_transcription?: string | null
-          is_archived?: boolean
         }
         Relationships: [
           {
             foreignKeyName: "chats_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-
-      chats_archive: {
-        Row: {
-          id: string
-          chat_id: string
-          user_id: string
-          created_at: string
-          chat_data: Json
-          archived_at: string
-        }
-        Insert: {
-          id?: string
-          chat_id: string
-          user_id: string
-          created_at?: string
-          chat_data: Json
-          archived_at?: string
-        }
-        Update: {
-          id?: string
-          chat_id?: string
-          user_id?: string
-          created_at?: string
-          chat_data?: Json
-          archived_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chats_archive_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chats_archive_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"

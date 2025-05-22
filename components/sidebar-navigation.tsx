@@ -44,7 +44,14 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   }
 
   const handleNewChat = () => {
-    router.push("/dashboard/new")
+    // Show a toast message explaining that chat creation is now handled externally
+    toast({
+      title: "External Chat Creation",
+      description: "New chats are now created through the external system.",
+    })
+    
+    // In a real implementation, this would redirect to an external system
+    window.open("https://lumman.ai/new-chat", "_blank")
     onClose()
   }
 
@@ -91,6 +98,11 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
                 >
                   <div className="flex flex-col items-start">
                     <span className="truncate w-full text-left">{conversation.chat_name || "Untitled Chat"}</span>
+                    {conversation.chat_summary && (
+                      <span className="text-xs text-muted-foreground mt-1 truncate w-full">
+                        {conversation.chat_summary.substring(0, 40)}...
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground mt-1">
                       {formatDate(new Date(conversation.created_at))}
                     </span>
