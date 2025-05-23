@@ -122,7 +122,6 @@ export function PhoneAuthForm() {
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       console.error(err);
-    } finally {
       setIsLoading(false);
       submitAttemptRef.current = false;
     }
@@ -147,16 +146,31 @@ export function PhoneAuthForm() {
         return;
       }
 
+      // Validate OTP format
+      if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+        setError("Please enter a valid 6-digit verification code.");
+        setIsLoading(false);
+        submitAttemptRef.current = false;
+        return;
+      }
+
+      console.log(`Verifying OTP for phone: ${phone} with OTP: ${otp}`);
       const { data, error } = await verifyOtp(phone, otp);
 
       if (error) {
         setError(error.message);
+        setIsLoading(false);
+        setIsRedirecting(false);
+        submitAttemptRef.current = false;
       } else if (!data?.user || !data?.session) {
         // Check for user and session data availability
         console.error("Authentication successful but no user data returned");
         setError(
           "Authentication failed: Unable to retrieve user data. Please try again."
         );
+        setIsLoading(false);
+        setIsRedirecting(false);
+        submitAttemptRef.current = false;
       } else {
         // Clear any timers
         if (timerRef.current) {
@@ -203,16 +217,20 @@ export function PhoneAuthForm() {
         }
 
         // Try router.push with fallback to window.location.href
+        // Add small delay to allow session synchronization with server
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
         const redirectTimeout = setTimeout(() => {
           console.log("Router.push timeout, using window.location.href");
           window.location.href = redirectTo;
-        }, 2000); // 2 second timeout
+        }, 3000); // Increased timeout to 3 seconds
 
         try {
           await router.push(redirectTo);
           clearTimeout(redirectTimeout);
           // Reset loading states only after successful navigation
           setIsLoading(false);
+          setIsRedirecting(false);
           submitAttemptRef.current = false;
         } catch (error) {
           console.error(
@@ -220,6 +238,7 @@ export function PhoneAuthForm() {
             error
           );
           clearTimeout(redirectTimeout);
+          // Note: Don't reset isRedirecting here since window.location.href will navigate away
           window.location.href = redirectTo;
         }
       }
@@ -227,6 +246,7 @@ export function PhoneAuthForm() {
       setError("An unexpected error occurred. Please try again.");
       console.error(err);
       setIsLoading(false);
+      setIsRedirecting(false);
       submitAttemptRef.current = false;
     }
   };
