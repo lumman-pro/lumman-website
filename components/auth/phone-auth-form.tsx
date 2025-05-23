@@ -184,7 +184,7 @@ export function PhoneAuthForm() {
         );
 
         // Since we already have user and session data from verifyOtp response,
-        // we can redirect immediately without waiting for SIGNED_IN event
+        // we can redirect immediately
         setIsRedirecting(true);
 
         // For reliability, also set up onAuthStateChange listener,
@@ -204,11 +204,8 @@ export function PhoneAuthForm() {
           authSubscriptionRef.current = subscription;
         }
 
-        // Use window.location.href for reliable redirect that forces page reload
-        // This avoids race condition with middleware not seeing the new session
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        window.location.href = redirectTo;
+        // Use Next.js router for navigation
+        router.push(redirectTo);
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
