@@ -128,10 +128,22 @@ export function PhoneAuthForm() {
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
+    console.log("=== handleVerifyOtp CALLED ===");
+    console.log("isLoading:", isLoading);
+    console.log("submitAttemptRef.current:", submitAttemptRef.current);
+    console.log("isRedirecting:", isRedirecting);
+
     e.preventDefault();
 
     // Prevent multiple submission attempts
-    if (isLoading || submitAttemptRef.current) return;
+    if (isLoading || submitAttemptRef.current) {
+      console.log(
+        "EARLY RETURN - isLoading or submitAttemptRef.current is true"
+      );
+      return;
+    }
+
+    console.log("Setting submitAttemptRef.current = true and isLoading = true");
     submitAttemptRef.current = true;
 
     setError(null);
@@ -354,7 +366,10 @@ export function PhoneAuthForm() {
                 type="text"
                 placeholder="6-digit code"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) => {
+                  console.log("OTP input changed:", e.target.value);
+                  setOtp(e.target.value);
+                }}
                 required
                 disabled={isLoading || isRedirecting}
                 maxLength={6}
@@ -366,6 +381,12 @@ export function PhoneAuthForm() {
               type="submit"
               className="w-full"
               disabled={isLoading || isRedirecting}
+              onClick={() => {
+                console.log("=== BUTTON CLICKED ===");
+                console.log("Button disabled?", isLoading || isRedirecting);
+                console.log("isLoading:", isLoading);
+                console.log("isRedirecting:", isRedirecting);
+              }}
             >
               {isLoading ? (
                 <>
