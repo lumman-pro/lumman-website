@@ -88,23 +88,14 @@ export function PhoneAuthForm() {
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
-    console.log("=== handleSendOtp CALLED ===");
-    console.log("isLoading before:", isLoading);
-
     e.preventDefault();
 
     // Prevent multiple submission attempts
-    if (isLoading || submitAttemptRef.current) {
-      console.log("handleSendOtp EARLY RETURN - already loading");
-      return;
-    }
-
-    console.log("handleSendOtp: Setting states...");
+    if (isLoading || submitAttemptRef.current) return;
     submitAttemptRef.current = true;
 
     setError(null);
     setIsLoading(true);
-    console.log("handleSendOtp: isLoading set to true");
 
     try {
       // Validate phone number format
@@ -132,47 +123,24 @@ export function PhoneAuthForm() {
       setError("An unexpected error occurred. Please try again.");
       console.error(err);
     } finally {
-      console.log("handleSendOtp: Resetting states in finally");
       setIsLoading(false);
       submitAttemptRef.current = false;
     }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
-    console.log("=== handleVerifyOtp CALLED ===");
-    console.log("isLoading:", isLoading);
-    console.log("submitAttemptRef.current:", submitAttemptRef.current);
-    console.log("isRedirecting:", isRedirecting);
-
     e.preventDefault();
 
     // Prevent multiple submission attempts
-    if (isLoading || submitAttemptRef.current) {
-      console.log(
-        "EARLY RETURN - isLoading or submitAttemptRef.current is true"
-      );
-      return;
-    }
-
-    console.log("Setting submitAttemptRef.current = true and isLoading = true");
+    if (isLoading || submitAttemptRef.current) return;
     submitAttemptRef.current = true;
 
     setError(null);
     setIsLoading(true);
 
     try {
-      // Debug logging
-      console.log("=== OTP Verification Debug ===");
-      console.log("Phone:", phone);
-      console.log("OTP value:", otp);
-      console.log("OTP length:", otp?.length);
-      console.log("OTP type:", typeof otp);
-      console.log("OTP expiry:", otpExpiry);
-      console.log("Current time:", Date.now());
-
       // Check if OTP has expired
       if (otpExpiry && Date.now() > otpExpiry) {
-        console.log("OTP expired - returning early");
         setError("Verification code has expired. Please request a new one.");
         setIsLoading(false);
         submitAttemptRef.current = false;
@@ -181,14 +149,12 @@ export function PhoneAuthForm() {
 
       // Validate OTP format
       if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
-        console.log("OTP validation failed - returning early");
         setError("Please enter a valid 6-digit verification code.");
         setIsLoading(false);
         submitAttemptRef.current = false;
         return;
       }
 
-      console.log("All validations passed, calling verifyOtp...");
       const { data, error } = await verifyOtp(phone, otp);
 
       if (error) {
@@ -219,9 +185,6 @@ export function PhoneAuthForm() {
 
         // Since we already have user and session data from verifyOtp response,
         // we can redirect immediately without waiting for SIGNED_IN event
-        console.log("Authentication successful, redirecting to:", redirectTo);
-
-        // Set redirecting state instead of resetting loading immediately
         setIsRedirecting(true);
 
         // For reliability, also set up onAuthStateChange listener,
@@ -230,16 +193,7 @@ export function PhoneAuthForm() {
           const {
             data: { subscription },
           } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log(
-              "Auth state changed:",
-              event,
-              "Session exists:",
-              !!session
-            );
-
             if (event === "SIGNED_IN" && session?.user) {
-              console.log("Session fully established with event:", event);
-
               // Clean up the subscription
               subscription.unsubscribe();
               authSubscriptionRef.current = null;
@@ -254,20 +208,6 @@ export function PhoneAuthForm() {
         // This avoids race condition with middleware not seeing the new session
         await new Promise((resolve) => setTimeout(resolve, 300));
 
-        // Debug: Check what cookies are actually set
-        console.log("Cookies before redirect:", document.cookie);
-        console.log("Available storage:", {
-          localStorage:
-            typeof localStorage !== "undefined"
-              ? Object.keys(localStorage)
-              : "not available",
-          sessionStorage:
-            typeof sessionStorage !== "undefined"
-              ? Object.keys(sessionStorage)
-              : "not available",
-        });
-
-        console.log("Redirecting to dashboard via window.location.href");
         window.location.href = redirectTo;
       }
     } catch (err) {
@@ -315,17 +255,6 @@ export function PhoneAuthForm() {
 
   return (
     <Card className="w-full max-w-md">
-      {(() => {
-        console.log("=== COMPONENT RENDER DEBUG ===");
-        console.log("Current step:", step);
-        console.log("isLoading:", isLoading);
-        console.log("isRedirecting:", isRedirecting);
-        console.log("submitAttemptRef.current:", submitAttemptRef.current);
-        console.log("phone:", phone);
-        console.log("otp:", otp);
-        console.log("error:", error);
-        return null;
-      })()}
       <CardHeader>
         <CardTitle className="text-2xl">Sign in with your phone</CardTitle>
         <CardDescription>
@@ -382,10 +311,7 @@ export function PhoneAuthForm() {
                 type="text"
                 placeholder="6-digit code"
                 value={otp}
-                onChange={(e) => {
-                  console.log("OTP input changed:", e.target.value);
-                  setOtp(e.target.value);
-                }}
+                onChange={(e) => setOtp(e.target.value)}
                 required
                 disabled={isLoading || isRedirecting}
                 maxLength={6}
@@ -397,12 +323,6 @@ export function PhoneAuthForm() {
               type="submit"
               className="w-full"
               disabled={isLoading || isRedirecting}
-              onClick={() => {
-                console.log("=== BUTTON CLICKED ===");
-                console.log("Button disabled?", isLoading || isRedirecting);
-                console.log("isLoading:", isLoading);
-                console.log("isRedirecting:", isRedirecting);
-              }}
             >
               {isLoading ? (
                 <>
