@@ -202,24 +202,12 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       {/* Bottom section with links and user profile */}
       <div className="px-6 py-4 mt-auto">
         <nav className="space-y-2 -mt-4">
-          <Link href="/insights" onClick={onClose}>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start text-sm border-0 shadow-none",
-                isActive("/insights") && "bg-muted font-medium"
-              )}
-            >
-              Insights
-            </Button>
-          </Link>
-
-          <Link href="/account" onClick={onClose}>
+          <Link href="/dashboard/account" onClick={onClose}>
             <Button
               variant="ghost"
               className={cn(
                 "w-full justify-start text-sm",
-                isActive("/account") && "bg-muted font-medium"
+                isActive("/dashboard/account") && "bg-muted font-medium"
               )}
             >
               <User className="h-4 w-4 mr-2" />
@@ -228,15 +216,6 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
                 : userData?.user_name || "Account Settings"}
             </Button>
           </Link>
-
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-sm"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign out
-          </Button>
         </nav>
       </div>
     </div>

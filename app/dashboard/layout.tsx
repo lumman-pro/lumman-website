@@ -1,75 +1,77 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { SidebarNavigation } from "@/components/sidebar-navigation"
-import { cn } from "@/lib/utils"
-import { Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from "react";
+import { SidebarNavigation } from "@/components/sidebar-navigation";
+import { cn } from "@/lib/utils";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Handle sidebar toggle
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
-  }
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
         // 768px is the md breakpoint in Tailwind
-        setIsSidebarOpen(false) // Reset mobile sidebar state
+        setIsSidebarOpen(false); // Reset mobile sidebar state
       }
-    }
+    };
 
     const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
+      const target = e.target as HTMLElement;
       if (
         isSidebarOpen &&
         !target.closest('[data-sidebar="true"]') &&
         !target.closest('[data-sidebar-toggle="true"]')
       ) {
-        setIsSidebarOpen(false)
+        setIsSidebarOpen(false);
       }
-    }
+    };
 
-    setIsMounted(true)
-    window.addEventListener("resize", handleResize)
-    document.addEventListener("mousedown", handleClickOutside)
+    setIsMounted(true);
+    window.addEventListener("resize", handleResize);
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      window.removeEventListener("resize", handleResize)
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [isSidebarOpen])
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isSidebarOpen]);
 
   if (!isMounted) {
-    return null // Prevent hydration mismatch
+    return null; // Prevent hydration mismatch
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-background transition-colors duration-300 ease-in-out">
       <div className="flex flex-1 relative">
         {/* Mobile menu toggle button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed top-4 left-4 z-50 md:hidden"
-          onClick={toggleSidebar}
-          data-sidebar-toggle="true"
-        >
-          <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
-        </Button>
-        
+        {!isSidebarOpen && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed top-4 left-4 z-50 md:hidden"
+            onClick={toggleSidebar}
+            data-sidebar-toggle="true"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle menu</span>
+          </Button>
+        )}
+
         {/* Overlay for mobile */}
         {isSidebarOpen && (
           <div
@@ -82,12 +84,15 @@ export default function DashboardLayout({
         {/* Sidebar */}
         <div
           className={cn(
-            "fixed md:sticky top-0 left-0 z-40 w-64 h-screen",
-            isSidebarOpen ? "block" : "hidden md:block",
+            "fixed md:sticky top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 ease-in-out md:translate-x-0",
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full md:block"
           )}
           data-sidebar="true"
         >
-          <SidebarNavigation isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+          <SidebarNavigation
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+          />
         </div>
 
         {/* Main content */}
@@ -96,5 +101,5 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
-  )
+  );
 }
