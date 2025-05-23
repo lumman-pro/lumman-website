@@ -138,8 +138,18 @@ export function PhoneAuthForm() {
     setIsLoading(true);
 
     try {
+      // Debug logging
+      console.log("=== OTP Verification Debug ===");
+      console.log("Phone:", phone);
+      console.log("OTP value:", otp);
+      console.log("OTP length:", otp?.length);
+      console.log("OTP type:", typeof otp);
+      console.log("OTP expiry:", otpExpiry);
+      console.log("Current time:", Date.now());
+
       // Check if OTP has expired
       if (otpExpiry && Date.now() > otpExpiry) {
+        console.log("OTP expired - returning early");
         setError("Verification code has expired. Please request a new one.");
         setIsLoading(false);
         submitAttemptRef.current = false;
@@ -148,13 +158,14 @@ export function PhoneAuthForm() {
 
       // Validate OTP format
       if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+        console.log("OTP validation failed - returning early");
         setError("Please enter a valid 6-digit verification code.");
         setIsLoading(false);
         submitAttemptRef.current = false;
         return;
       }
 
-      console.log(`Verifying OTP for phone: ${phone} with OTP: ${otp}`);
+      console.log("All validations passed, calling verifyOtp...");
       const { data, error } = await verifyOtp(phone, otp);
 
       if (error) {
