@@ -115,7 +115,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       )}
     >
       {/* Logo section */}
-      <div className="px-6 h-16 border-b flex items-center">
+      <div className="px-6 h-16 flex items-center">
         {logoSrc ? (
           <Link href="/" onClick={onClose}>
             <img
@@ -131,7 +131,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       </div>
 
       {/* New Chat section */}
-      <div className="px-6 py-4 border-b">
+      <div className="px-6 py-4">
         <Button
           variant="ghost"
           className="w-full justify-start text-sm font-medium"
@@ -143,7 +143,12 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       </div>
 
       {/* Scrollable conversations list */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden border-0 outline-0 shadow-none ring-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="px-3 py-2">
+          <h3 className="text-xs font-medium text-muted-foreground tracking-wide">
+            Recent chats
+          </h3>
+        </div>
         {isChatsLoading ? (
           <div className="px-4 py-2 text-sm text-muted-foreground">
             Loading conversations...
@@ -159,13 +164,16 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
             No conversations yet
           </div>
         ) : (
-          <ul className="space-y-1">
+          <ul className="border-0 outline-0 shadow-none before:content-none after:content-none [&>:last-child]:border-b-0">
             {chatsData.chats.map((conversation) => (
-              <li key={conversation.id}>
+              <li
+                key={conversation.id}
+                className="border-0 outline-0 shadow-none before:content-none after:content-none -my-px bg-background"
+              >
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start text-sm font-normal px-4 py-2 h-auto",
+                    "w-full justify-start text-sm font-normal px-4 py-2 h-auto border-0 outline-0 shadow-none ring-0 before:content-none after:content-none",
                     isActive(`/dashboard/chat/${conversation.id}`) &&
                       "bg-muted font-medium"
                   )}
@@ -192,13 +200,13 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       </div>
 
       {/* Bottom section with links and user profile */}
-      <div className="px-6 py-4 border-t mt-auto">
-        <nav className="space-y-2">
+      <div className="px-6 py-4 mt-auto">
+        <nav className="space-y-2 -mt-4">
           <Link href="/insights" onClick={onClose}>
             <Button
               variant="ghost"
               className={cn(
-                "w-full justify-start text-sm",
+                "w-full justify-start text-sm border-0 shadow-none",
                 isActive("/insights") && "bg-muted font-medium"
               )}
             >
