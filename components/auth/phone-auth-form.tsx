@@ -165,33 +165,10 @@ export function PhoneAuthForm() {
         }
 
         // Show success notification
-        toast({
-          title: "Authentication successful",
-          description: "You have been successfully signed in.",
-        });
+        toast(
+          "Authentication successful - You have been successfully signed in."
+        );
 
-<<<<<<< Updated upstream
-        // Устанавливаем слушатель события onAuthStateChange для отслеживания состояния сессии
-        const {
-          data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
-          console.log("Auth state changed:", event, "Session exists:", !!session)
-          
-          // Редирект только после получения события INITIAL_SESSION
-          if (event === 'INITIAL_SESSION' && session?.user) {
-            console.log("Session initialized with event:", event, "redirecting to:", redirectTo)
-            
-            // Clean up the subscription
-            subscription.unsubscribe()
-            authSubscriptionRef.current = null
-            
-            // Reset loading state
-            setIsLoading(false)
-            submitAttemptRef.current = false
-            
-            // Redirect to the dashboard or specified redirect URL
-            router.push(redirectTo)
-=======
         // Since we already have user and session data from verifyOtp response,
         // we can redirect immediately without waiting for SIGNED_IN event
         console.log("Authentication successful, redirecting to:", redirectTo);
@@ -201,31 +178,29 @@ export function PhoneAuthForm() {
 
         // For reliability, also set up onAuthStateChange listener,
         // but don't block UI waiting for this event
-        const {
-          data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
-          console.log(
-            "Auth state changed:",
-            event,
-            "Session exists:",
-            !!session
-          );
+        if (supabase) {
+          const {
+            data: { subscription },
+          } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log(
+              "Auth state changed:",
+              event,
+              "Session exists:",
+              !!session
+            );
 
-          if (event === "SIGNED_IN" && session?.user) {
-            console.log("Session fully established with event:", event);
+            if (event === "SIGNED_IN" && session?.user) {
+              console.log("Session fully established with event:", event);
 
-            // Clean up the subscription
-            subscription.unsubscribe();
-            authSubscriptionRef.current = null;
->>>>>>> Stashed changes
-          }
-        });
+              // Clean up the subscription
+              subscription.unsubscribe();
+              authSubscriptionRef.current = null;
+            }
+          });
 
-        // Store the subscription reference for cleanup if component unmounts
-<<<<<<< Updated upstream
-        authSubscriptionRef.current = subscription
-=======
-        authSubscriptionRef.current = subscription;
+          // Store the subscription reference for cleanup if component unmounts
+          authSubscriptionRef.current = subscription;
+        }
 
         // Try router.push with fallback to window.location.href
         const redirectTimeout = setTimeout(() => {
@@ -247,7 +222,6 @@ export function PhoneAuthForm() {
           clearTimeout(redirectTimeout);
           window.location.href = redirectTo;
         }
->>>>>>> Stashed changes
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
@@ -278,10 +252,9 @@ export function PhoneAuthForm() {
         setError(null);
 
         // Show success message
-        toast({
-          title: "Verification code sent",
-          description: "A new verification code has been sent to your phone.",
-        });
+        toast(
+          "Verification code sent - A new verification code has been sent to your phone."
+        );
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
