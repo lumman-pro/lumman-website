@@ -108,6 +108,8 @@ export async function middleware(request: NextRequest) {
             );
           } else if (refreshData?.session) {
             console.log("Successfully refreshed session in middleware");
+            // Update session variable with refreshed session
+            session = refreshData.session;
           }
         }
       } catch (userError) {

@@ -254,6 +254,19 @@ export function PhoneAuthForm() {
         // This avoids race condition with middleware not seeing the new session
         await new Promise((resolve) => setTimeout(resolve, 300));
 
+        // Debug: Check what cookies are actually set
+        console.log("Cookies before redirect:", document.cookie);
+        console.log("Available storage:", {
+          localStorage:
+            typeof localStorage !== "undefined"
+              ? Object.keys(localStorage)
+              : "not available",
+          sessionStorage:
+            typeof sessionStorage !== "undefined"
+              ? Object.keys(sessionStorage)
+              : "not available",
+        });
+
         console.log("Redirecting to dashboard via window.location.href");
         window.location.href = redirectTo;
       }

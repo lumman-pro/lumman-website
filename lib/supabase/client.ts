@@ -24,7 +24,6 @@ export function createBrowserSupabaseClient() {
         autoRefreshToken: true,
         flowType: "pkce",
         detectSessionInUrl: true,
-        storageKey: "lumman-auth",
       },
     },
   )
