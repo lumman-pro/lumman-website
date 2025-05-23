@@ -88,14 +88,23 @@ export function PhoneAuthForm() {
   };
 
   const handleSendOtp = async (e: React.FormEvent) => {
+    console.log("=== handleSendOtp CALLED ===");
+    console.log("isLoading before:", isLoading);
+
     e.preventDefault();
 
     // Prevent multiple submission attempts
-    if (isLoading || submitAttemptRef.current) return;
+    if (isLoading || submitAttemptRef.current) {
+      console.log("handleSendOtp EARLY RETURN - already loading");
+      return;
+    }
+
+    console.log("handleSendOtp: Setting states...");
     submitAttemptRef.current = true;
 
     setError(null);
     setIsLoading(true);
+    console.log("handleSendOtp: isLoading set to true");
 
     try {
       // Validate phone number format
@@ -122,6 +131,8 @@ export function PhoneAuthForm() {
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
       console.error(err);
+    } finally {
+      console.log("handleSendOtp: Resetting states in finally");
       setIsLoading(false);
       submitAttemptRef.current = false;
     }
@@ -310,6 +321,17 @@ export function PhoneAuthForm() {
 
   return (
     <Card className="w-full max-w-md">
+      {(() => {
+        console.log("=== COMPONENT RENDER DEBUG ===");
+        console.log("Current step:", step);
+        console.log("isLoading:", isLoading);
+        console.log("isRedirecting:", isRedirecting);
+        console.log("submitAttemptRef.current:", submitAttemptRef.current);
+        console.log("phone:", phone);
+        console.log("otp:", otp);
+        console.log("error:", error);
+        return null;
+      })()}
       <CardHeader>
         <CardTitle className="text-2xl">Sign in with your phone</CardTitle>
         <CardDescription>
