@@ -250,31 +250,12 @@ export function PhoneAuthForm() {
           authSubscriptionRef.current = subscription;
         }
 
-        // Try router.push with fallback to window.location.href
-        // Add small delay to allow session synchronization with server
+        // Use window.location.href for reliable redirect that forces page reload
+        // This avoids race condition with middleware not seeing the new session
         await new Promise((resolve) => setTimeout(resolve, 300));
 
-        const redirectTimeout = setTimeout(() => {
-          console.log("Router.push timeout, using window.location.href");
-          window.location.href = redirectTo;
-        }, 3000); // Increased timeout to 3 seconds
-
-        try {
-          await router.push(redirectTo);
-          clearTimeout(redirectTimeout);
-          // Reset loading states only after successful navigation
-          setIsLoading(false);
-          setIsRedirecting(false);
-          submitAttemptRef.current = false;
-        } catch (error) {
-          console.error(
-            "Router.push failed, using window.location.href",
-            error
-          );
-          clearTimeout(redirectTimeout);
-          // Note: Don't reset isRedirecting here since window.location.href will navigate away
-          window.location.href = redirectTo;
-        }
+        console.log("Redirecting to dashboard via window.location.href");
+        window.location.href = redirectTo;
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
