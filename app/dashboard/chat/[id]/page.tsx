@@ -78,16 +78,6 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Display chat transcription if available */}
-        {chatData?.chat?.chat_transcription && (
-          <div className="border-t pt-4 mt-8">
-            <h3 className="font-medium mb-4">Transcription</h3>
-            <div className="whitespace-pre-wrap text-sm text-muted-foreground">
-              {chatData.chat.chat_transcription}
-            </div>
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
     </div>

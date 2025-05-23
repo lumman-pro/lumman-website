@@ -226,7 +226,9 @@ export function useChatMessages(chatId: string) {
         // Get the chat details
         const { data: chatData, error: chatError } = await supabase
           .from("chats")
-          .select("*")
+          .select(
+            "id, user_id, chat_name, chat_summary, chat_duration, created_at"
+          )
           .eq("id", chatId)
           .eq("user_id", user.id)
           .single();
