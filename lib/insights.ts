@@ -1,5 +1,9 @@
-import { supabaseServer } from "./supabase/supabaseServer"
+import { createServerSupabaseClient } from "./supabase/server-client"
+import { getServerSession } from "./supabase/server-auth"
 import type { Database } from "./supabase/database.types"
+
+// Add the import for handleSupabaseError
+import { handleSupabaseError } from "./utils"
 
 export type Post = Database["public"]["Tables"]["insights_posts"]["Row"] & {
   author?: Database["public"]["Tables"]["insights_authors"]["Row"] | null
@@ -8,6 +12,7 @@ export type Post = Database["public"]["Tables"]["insights_posts"]["Row"] & {
 
 export type Category = Database["public"]["Tables"]["insights_categories"]["Row"]
 
+// Update the getPosts function
 export async function getPosts({
   limit = 10,
   offset = 0,
@@ -19,124 +24,217 @@ export async function getPosts({
   categorySlug?: string | null
   includeUnpublished?: boolean
 } = {}): Promise<{ posts: Post[]; count: number }> {
-  // Start with a basic query
-  let query = supabaseServer.from("insights_posts").select("*, author:insights_authors(*)")
+  try {
+    const supabase = createServerSupabaseClient()
 
-  if (!includeUnpublished) {
-    query = query.eq("is_published", true)
-  }
+    // Check if user is authenticated (for admin access to unpublished posts)
+    const session = await getServerSession()
+    const isAuthenticated = !!session?.user
 
-  // If filtering by category, we need to handle this differently
-  // We'll get the post IDs that belong to the category first
-  if (categorySlug) {
-    const { data: categoryData } = await supabaseServer
-      .from("insights_categories")
-      .select("id")
-      .eq("slug", categorySlug)
-      .single()
+    // If filtering by category, get the category ID first
+    let categoryId: string | null = null
+    if (categorySlug) {
+      const { data: category, error: categoryError } = await supabase
+        .from("insights_categories")
+        .select("id")
+        .eq("slug", categorySlug)
+        .single()
 
-    if (categoryData) {
-      const { data: postIds } = await supabaseServer
-        .from("insights_posts_categories")
-        .select("post_id")
-        .eq("category_id", categoryData.id)
+      if (categoryError) {
+        console.error("Error fetching category:", categoryError)
+        throw new Error(handleSupabaseError(categoryError, "getPosts:fetchCategory", "Category not found"))
+      }
 
-      if (postIds && postIds.length > 0) {
-        const ids = postIds.map((item) => item.post_id)
-        query = query.in("id", ids)
-      } else {
-        // No posts in this category
+      categoryId = category?.id || null
+
+      // If category not found, return empty result
+      if (!categoryId) {
         return { posts: [], count: 0 }
       }
     }
-  }
 
-  // Execute the query with pagination
-  const {
-    data: posts,
-    error,
-    count,
-  } = await query.order("published_at", { ascending: false }).range(offset, offset + limit - 1)
+    // Build the query for posts with authors
+    let query = supabase.from("insights_posts").select("*, author:insights_authors(*)", { count: "exact" })
 
-  if (error) {
-    console.error("Error fetching posts:", error)
+    // Apply published filter based on authentication status
+    // RLS will handle this automatically, but we're being explicit for clarity
+    if (!isAuthenticated || !includeUnpublished) {
+      query = query.eq("is_published", true)
+    }
+
+    // If filtering by category, use a more efficient approach
+    if (categoryId) {
+      // Get post IDs that belong to the category
+      const { data: postRelations, error: relationsError } = await supabase
+        .from("insights_posts_categories")
+        .select("post_id")
+        .eq("category_id", categoryId)
+
+      if (relationsError) {
+        console.error("Error fetching post relations:", relationsError)
+        throw new Error(
+          handleSupabaseError(relationsError, "getPosts:fetchPostRelations", "Failed to load category posts"),
+        )
+      }
+
+      // If no posts in this category, return empty result
+      if (!postRelations || postRelations.length === 0) {
+        return { posts: [], count: 0 }
+      }
+
+      // Filter posts by the IDs we found
+      const postIds = postRelations.map((relation) => relation.post_id)
+      query = query.in("id", postIds)
+    }
+
+    // Execute the query with pagination
+    const {
+      data: postsWithAuthors,
+      error: postsError,
+      count,
+    } = await query.order("published_at", { ascending: false }).range(offset, offset + limit - 1)
+
+    if (postsError) {
+      console.error("Error fetching posts:", postsError)
+      throw new Error(handleSupabaseError(postsError, "getPosts:fetchPosts", "Failed to load posts"))
+    }
+
+    // If no posts, return early
+    if (!postsWithAuthors || postsWithAuthors.length === 0) {
+      return { posts: [], count: 0 }
+    }
+
+    // Get all post IDs
+    const postIds = postsWithAuthors.map((post) => post.id)
+
+    // Fetch categories for all posts in a single query with join
+    const { data: categoriesData, error: categoriesError } = await supabase
+      .from("insights_posts_categories")
+      .select("post_id, category:insights_categories(*)")
+      .in("post_id", postIds)
+
+    if (categoriesError) {
+      console.error("Error fetching categories:", categoriesError)
+      // Return posts without categories rather than failing completely
+      return {
+        posts: postsWithAuthors.map((post) => ({ ...post, categories: [] })),
+        count: count || 0,
+      }
+    }
+
+    // Group categories by post_id for efficient mapping
+    const categoriesByPostId: Record<string, Category[]> = {}
+    categoriesData?.forEach((item) => {
+      if (!categoriesByPostId[item.post_id]) {
+        categoriesByPostId[item.post_id] = []
+      }
+      if (item.category) {
+        categoriesByPostId[item.post_id].push(item.category)
+      }
+    })
+
+    // Map categories to posts
+    const postsWithCategories = postsWithAuthors.map((post) => ({
+      ...post,
+      categories: categoriesByPostId[post.id] || [],
+    }))
+
+    return {
+      posts: postsWithCategories,
+      count: count || 0,
+    }
+  } catch (error) {
+    console.error("Error in getPosts:", error)
+    // Return empty array instead of throwing to prevent page crashes
     return { posts: [], count: 0 }
   }
+}
 
-  // Fetch categories for each post
-  const postsWithCategories = await Promise.all(
-    (posts || []).map(async (post) => {
-      const { data: postCategories } = await supabaseServer
+// Update the getCategories function
+export async function getCategories(): Promise<Category[]> {
+  try {
+    const supabase = createServerSupabaseClient()
+
+    const { data: categories, error } = await supabase.from("insights_categories").select("*").order("name")
+
+    if (error) {
+      console.error("Error fetching categories:", error)
+      throw new Error(handleSupabaseError(error, "getCategories", "Failed to load categories"))
+    }
+
+    return categories || []
+  } catch (error) {
+    console.error("Error in getCategories:", error)
+    // Return empty array instead of throwing to prevent page crashes
+    return []
+  }
+}
+
+// Update the getPostBySlug function
+export async function getPostBySlug(slug: string): Promise<Post | null> {
+  try {
+    const supabase = createServerSupabaseClient()
+
+    // Check if user is authenticated (for admin access to unpublished posts)
+    const session = await getServerSession()
+    const isAuthenticated = !!session?.user
+
+    // Build query
+    let query = supabase.from("insights_posts").select("*, author:insights_authors(*)").eq("slug", slug)
+
+    // For non-authenticated users, only show published posts
+    // RLS will handle this automatically, but we're being explicit for clarity
+    if (!isAuthenticated) {
+      query = query.eq("is_published", true)
+    }
+
+    const { data: post, error } = await query.single()
+
+    if (error) {
+      console.error("Error fetching post:", error)
+      if (error.code === "PGRST116") {
+        // No rows returned - post not found or not published
+        return null
+      }
+      throw new Error(handleSupabaseError(error, "getPostBySlug:fetchPost", "Failed to load post"))
+    }
+
+    if (!post) {
+      return null
+    }
+
+    try {
+      // Fetch categories for the post in a single query chain
+      const { data: postCategories, error: categoriesError } = await supabase
         .from("insights_posts_categories")
-        .select("category_id")
+        .select("category:insights_categories(*)")
         .eq("post_id", post.id)
 
-      if (postCategories && postCategories.length > 0) {
-        const categoryIds = postCategories.map((pc) => pc.category_id)
-
-        const { data: categories } = await supabaseServer.from("insights_categories").select("*").in("id", categoryIds)
-
+      if (categoriesError) {
+        console.error("Error fetching post categories:", categoriesError)
+        // Return post without categories rather than failing completely
         return {
           ...post,
-          categories: categories || [],
+          categories: [],
         }
       }
 
+      // Extract categories from the joined query
+      const categories = (postCategories?.map((item) => item.category).filter(Boolean) as Category[]) || []
+
+      return {
+        ...post,
+        categories,
+      }
+    } catch (err) {
+      console.error("Error processing post categories:", err)
       return {
         ...post,
         categories: [],
       }
-    }),
-  )
-
-  return {
-    posts: postsWithCategories,
-    count: count || 0,
-  }
-}
-
-export async function getPostBySlug(slug: string): Promise<Post | null> {
-  const { data: post, error } = await supabaseServer
-    .from("insights_posts")
-    .select("*, author:insights_authors(*)")
-    .eq("slug", slug)
-    .single()
-
-  if (error || !post) {
-    console.error("Error fetching post:", error)
+    }
+  } catch (error) {
+    console.error("Error in getPostBySlug:", error)
     return null
   }
-
-  // Fetch categories for the post
-  const { data: postCategories } = await supabaseServer
-    .from("insights_posts_categories")
-    .select("category_id")
-    .eq("post_id", post.id)
-
-  if (postCategories && postCategories.length > 0) {
-    const categoryIds = postCategories.map((pc) => pc.category_id)
-
-    const { data: categories } = await supabaseServer.from("insights_categories").select("*").in("id", categoryIds)
-
-    return {
-      ...post,
-      categories: categories || [],
-    }
-  }
-
-  return {
-    ...post,
-    categories: [],
-  }
-}
-
-export async function getCategories(): Promise<Category[]> {
-  const { data: categories, error } = await supabaseServer.from("insights_categories").select("*").order("name")
-
-  if (error) {
-    console.error("Error fetching categories:", error)
-    return []
-  }
-
-  return categories
 }

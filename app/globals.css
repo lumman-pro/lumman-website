@@ -37,25 +37,25 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
+    --foreground: 0 0% 5%; /* Increased contrast from 10% to 5% */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 0 0% 5%; /* Increased contrast from 10% to 5% */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 0 0% 5%; /* Increased contrast from 10% to 5% */
 
-    --primary: 0 0% 10%;
+    --primary: 0 0% 5%; /* Increased contrast from 10% to 5% */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary-foreground: 0 0% 5%; /* Increased contrast from 10% to 5% */
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted-foreground: 0 0% 35%; /* Increased contrast from 45% to 35% */
 
     --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 10%;
+    --accent-foreground: 0 0% 5%; /* Increased contrast from 10% to 5% */
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -72,23 +72,23 @@
   }
 
   .dark {
-    --background: 0 0% 10%;
+    --background: 0 0% 7%; /* Slightly darker background for better contrast */
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 10%;
+    --card: 0 0% 7%; /* Slightly darker background for better contrast */
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 10%;
+    --popover: 0 0% 7%; /* Slightly darker background for better contrast */
     --popover-foreground: 0 0% 100%;
 
     --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 10%;
+    --primary-foreground: 0 0% 7%; /* Slightly darker background for better contrast */
 
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --muted-foreground: 0 0% 75%; /* Increased contrast from 65% to 75% */
 
     --accent: 0 0% 15%;
     --accent-foreground: 0 0% 100%;

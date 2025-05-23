@@ -1,0 +1,212 @@
+[
+  {
+    "schemaname": "public",
+    "tablename": "call_analytics",
+    "policyname": "Enable insert access for service role only",
+    "roles": "{service_role}",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "call_analytics",
+    "policyname": "Enable read access for authenticated users",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "calls",
+    "policyname": "Enable insert access for service role only",
+    "roles": "{service_role}",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "calls",
+    "policyname": "Enable read access for authenticated users",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "calls",
+    "policyname": "Enable update access for service role only",
+    "roles": "{service_role}",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "qual": "true",
+    "with_check": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats",
+    "policyname": "Authenticated users can delete own chats",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats",
+    "policyname": "Authenticated users can insert own chats",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats",
+    "policyname": "Authenticated users can update own chats",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats",
+    "policyname": "Authenticated users can view own chats",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats_archive",
+    "policyname": "Users can delete own chats archive",
+    "roles": "{public}",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats_archive",
+    "policyname": "Users can insert own chats archive",
+    "roles": "{public}",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats_archive",
+    "policyname": "Users can update own chats archive",
+    "roles": "{public}",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "chats_archive",
+    "policyname": "Users can view own chats archive",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "insights_authors",
+    "policyname": "Allow public read access for authors",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "insights_categories",
+    "policyname": "Allow public read access for categories",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "insights_posts",
+    "policyname": "Allow public read access for published posts",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "(is_published = true)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "insights_posts_categories",
+    "policyname": "Allow public read access for post categories",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_profiles",
+    "policyname": "Authenticated users can delete own profile",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_profiles",
+    "policyname": "Authenticated users can insert own profile",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_profiles",
+    "policyname": "Authenticated users can update own profile",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_profiles",
+    "policyname": "Authenticated users can view own profile",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  }
+]

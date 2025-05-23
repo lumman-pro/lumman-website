@@ -1,34 +1,35 @@
 import type React from "react"
-import "@/app/globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Inter } from "next/font/google"
 import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { ThemeProvider } from "@/components/theme-provider"
 import { SupabaseProvider } from "@/providers/supabase-provider"
+import { ReactQueryProvider } from "@/providers/query-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Lumman.ai",
-  description: "AI consulting and automation firm",
+  description: "AI Automation & Advisory",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="en" suppressHydrationWarning className="theme-transition">
-      <head>
-        <link rel="preload" href="/lumman_black.svg" as="image" type="image/svg+xml" />
-        <link rel="preload" href="/lumman_white.svg" as="image" type="image/svg+xml" />
-      </head>
-      <body className={`${inter.className} antialiased theme-transition`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
         <SupabaseProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
-          </ThemeProvider>
+          <ReactQueryProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </ReactQueryProvider>
         </SupabaseProvider>
       </body>
     </html>

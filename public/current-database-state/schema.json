@@ -1,0 +1,328 @@
+[
+    {
+      "table_name": "call_analytics",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "call_analytics",
+      "column_name": "call_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "call_analytics",
+      "column_name": "success_rate",
+      "data_type": "double precision"
+    },
+    {
+      "table_name": "call_analytics",
+      "column_name": "latency_metrics",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "call_analytics",
+      "column_name": "custom_metrics",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "call_analytics",
+      "column_name": "ai_analysis",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "call_analytics",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "call_id",
+      "data_type": "text"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "status",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "direction",
+      "data_type": "USER-DEFINED"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "phone_number",
+      "data_type": "text"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "start_time",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "end_time",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "duration",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "transcript",
+      "data_type": "text"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "sentiment_analysis",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "calls",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "chats",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "chats",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "chats",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "chats",
+      "column_name": "chat_duration",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "chats",
+      "column_name": "chat_name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "chats",
+      "column_name": "chat_summary",
+      "data_type": "text"
+    },
+    {
+      "table_name": "chats",
+      "column_name": "chat_transcription",
+      "data_type": "text"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "chat_duration",
+      "data_type": "integer"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "chat_name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "chat_summary",
+      "data_type": "text"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "chat_transcription",
+      "data_type": "text"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "archived_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "chats_archive",
+      "column_name": "operation",
+      "data_type": "character varying"
+    },
+    {
+      "table_name": "insights_authors",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "insights_authors",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_authors",
+      "column_name": "bio",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_authors",
+      "column_name": "avatar_url",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_authors",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "insights_categories",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "insights_categories",
+      "column_name": "name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_categories",
+      "column_name": "slug",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_categories",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "title",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "slug",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "content",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "excerpt",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "featured_image",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "published_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "author_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "is_published",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "insights_posts",
+      "column_name": "content_html",
+      "data_type": "text"
+    },
+    {
+      "table_name": "insights_posts_categories",
+      "column_name": "post_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "insights_posts_categories",
+      "column_name": "category_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "user_id",
+      "data_type": "uuid"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "company_name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "company_url",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "user_name",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "user_email",
+      "data_type": "text"
+    },
+    {
+      "table_name": "user_profiles",
+      "column_name": "user_phone",
+      "data_type": "text"
+    }
+  ]
+  
