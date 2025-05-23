@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserData, useUpdateUserProfile } from "@/hooks/use-data-fetching";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,13 @@ export default function AccountPage() {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    user_email: "",
+    company_url: "",
+  });
 
   // Update form data when profile is loaded
-  useState(() => {
+  useEffect(() => {
     if (profile) {
       setFormData({
         user_name: profile.user_name || "",
@@ -39,11 +43,104 @@ export default function AccountPage() {
         company_url: profile.company_url || "",
       });
     }
-  });
+  }, [profile]);
+
+  // Validation functions
+  const validateEmail = (email: string): string => {
+    if (!email) return "";
+
+    // Basic email format validation
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    if (!emailRegex.test(email.trim())) {
+      return "Please enter a valid email address";
+    }
+
+    // Check for common mistakes
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Check for double dots or dots at start/end
+    if (
+      trimmedEmail.includes("..") ||
+      trimmedEmail.startsWith(".") ||
+      trimmedEmail.includes(".@") ||
+      trimmedEmail.includes("@.")
+    ) {
+      return "Please check your email address format";
+    }
+
+    // Check for missing @ or multiple @
+    const atCount = (trimmedEmail.match(/@/g) || []).length;
+    if (atCount !== 1) {
+      return "Email address must contain exactly one @ symbol";
+    }
+
+    return "";
+  };
+
+  const validateAndFormatUrl = (
+    url: string
+  ): { isValid: boolean; formattedUrl: string; error: string } => {
+    if (!url) return { isValid: true, formattedUrl: "", error: "" };
+
+    let formattedUrl = url.trim();
+
+    // Remove any existing protocol to normalize
+    formattedUrl = formattedUrl.replace(/^https?:\/\//, "");
+
+    // Remove www. prefix if exists for normalization
+    const wwwPrefix = formattedUrl.startsWith("www.") ? "www." : "";
+    if (wwwPrefix) {
+      formattedUrl = formattedUrl.substring(4);
+    }
+
+    // Check for localhost or IP addresses
+    const isLocalhost =
+      formattedUrl.startsWith("localhost") ||
+      formattedUrl.startsWith("127.0.0.1");
+    const isIP = /^(\d{1,3}\.){3}\d{1,3}(:\d+)?(\/.*)?$/.test(formattedUrl);
+
+    // Basic domain validation - must have at least one dot and valid characters (unless localhost or IP)
+    const domainRegex =
+      /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.([a-zA-Z]{2,}\.)*[a-zA-Z]{2,}(:\d+)?(\/.*)?$/;
+
+    if (!isLocalhost && !isIP && !domainRegex.test(formattedUrl)) {
+      return {
+        isValid: false,
+        formattedUrl: url,
+        error: "Please enter a valid website address (e.g., example.com)",
+      };
+    }
+
+    // Add https:// protocol and www prefix if it was there originally
+    const finalUrl = `https://${wwwPrefix}${formattedUrl}`;
+
+    try {
+      new URL(finalUrl);
+      return { isValid: true, formattedUrl: finalUrl, error: "" };
+    } catch {
+      return {
+        isValid: false,
+        formattedUrl: url,
+        error: "Please enter a valid website address (e.g., example.com)",
+      };
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEmailBlur = () => {
+    const emailError = validateEmail(formData.user_email);
+    setValidationErrors((prev) => ({ ...prev, user_email: emailError }));
+  };
+
+  const handleUrlBlur = () => {
+    const { error } = validateAndFormatUrl(formData.company_url);
+    setValidationErrors((prev) => ({ ...prev, company_url: error }));
   };
 
   const handleEditToggle = () => {
@@ -57,6 +154,11 @@ export default function AccountPage() {
           company_url: profile.company_url || "",
         });
       }
+      // Clear validation errors
+      setValidationErrors({
+        user_email: "",
+        company_url: "",
+      });
     }
     setIsEditing(!isEditing);
   };
@@ -64,19 +166,38 @@ export default function AccountPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate all fields before submission
+    const emailError = validateEmail(formData.user_email);
+    const {
+      isValid: isUrlValid,
+      formattedUrl,
+      error: urlError,
+    } = validateAndFormatUrl(formData.company_url);
+
+    setValidationErrors({
+      user_email: emailError,
+      company_url: urlError,
+    });
+
+    // Don't submit if there are validation errors
+    if (emailError || urlError) {
+      return;
+    }
+
     try {
       await updateProfileMutation.mutateAsync({
         user_name: formData.user_name || null,
         user_email: formData.user_email || null,
         company_name: formData.company_name || null,
-        company_url: formData.company_url || null,
+        company_url: formattedUrl || null, // Use formatted URL
       });
 
+      // Update local form data with formatted URL
+      if (formattedUrl !== formData.company_url) {
+        setFormData((prev) => ({ ...prev, company_url: formattedUrl }));
+      }
+
       setIsEditing(false);
-      toast({
-        title: "Success",
-        description: "Your profile has been updated.",
-      });
     } catch (error) {
       toast({
         title: "Error",
@@ -150,7 +271,7 @@ export default function AccountPage() {
           </Button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           <div className="space-y-2">
             <Label htmlFor="user_name">Name</Label>
             <Input
@@ -168,12 +289,20 @@ export default function AccountPage() {
             <Input
               id="user_email"
               name="user_email"
-              type="email"
               value={formData.user_email}
               onChange={handleInputChange}
               disabled={!isEditing}
-              placeholder="Your email"
+              placeholder="your.email@example.com"
+              className={
+                validationErrors.user_email ? "border-destructive" : ""
+              }
+              onBlur={handleEmailBlur}
             />
+            {validationErrors.user_email && (
+              <p className="text-sm text-destructive">
+                {validationErrors.user_email}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -193,17 +322,32 @@ export default function AccountPage() {
             <Input
               id="company_url"
               name="company_url"
-              type="url"
               value={formData.company_url}
               onChange={handleInputChange}
               disabled={!isEditing}
-              placeholder="https://example.com"
+              placeholder="example.com or https://example.com"
+              className={
+                validationErrors.company_url ? "border-destructive" : ""
+              }
+              onBlur={handleUrlBlur}
             />
+            {validationErrors.company_url && (
+              <p className="text-sm text-destructive">
+                {validationErrors.company_url}
+              </p>
+            )}
           </div>
 
           {isEditing && (
             <div className="flex justify-end">
-              <Button type="submit" disabled={updateProfileMutation.isPending}>
+              <Button
+                type="submit"
+                disabled={
+                  updateProfileMutation.isPending ||
+                  validationErrors.user_email !== "" ||
+                  validationErrors.company_url !== ""
+                }
+              >
                 {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>

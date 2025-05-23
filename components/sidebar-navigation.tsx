@@ -210,10 +210,12 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
                 isActive("/dashboard/account") && "bg-muted font-medium"
               )}
             >
-              <User className="h-4 w-4 mr-2" />
-              {isUserLoading
-                ? "Loading..."
-                : userData?.user_name || "Account Settings"}
+              <User className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">
+                {isUserLoading
+                  ? "Loading..."
+                  : userData?.user_name || "Account Settings"}
+              </span>
             </Button>
           </Link>
         </nav>

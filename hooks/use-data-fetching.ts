@@ -76,9 +76,6 @@ export function useUserData(options?: UseQueryOptions<UserProfile | null>) {
             user_phone: user.phone || null,
             company_name: null,
             company_url: null,
-            account_type: "free",
-            subscription_status: "inactive",
-            subscription_id: null,
           })
           .select("*")
           .single();
@@ -118,7 +115,6 @@ export function useUpdateUserProfile() {
           .from("user_profiles")
           .update({
             ...updates,
-            updated_at: new Date().toISOString(),
           })
           .eq("user_id", user.id)
           .select("*")
