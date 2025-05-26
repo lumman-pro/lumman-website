@@ -66,7 +66,7 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Display chat summary */}
         <div className="flex justify-center mb-8">
-          <div className="bg-muted/50 rounded-lg p-4 max-w-[80%]">
+          <div className="bg-muted/50 rounded-lg p-4 w-[96%] max-w-4xl">
             <h2 className="font-medium mb-2">Chat Summary</h2>
             <p className="text-muted-foreground whitespace-pre-wrap">
               {chatData?.chat?.chat_summary ||

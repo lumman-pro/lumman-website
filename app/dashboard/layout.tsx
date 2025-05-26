@@ -7,6 +7,7 @@ import { SidebarNavigation } from "@/components/sidebar-navigation";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,10 @@ export default function DashboardLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
+
+  // Check if current page is a chat page
+  const isChatPage = pathname?.includes("/dashboard/chat/");
 
   // Handle sidebar toggle
   const toggleSidebar = () => {
@@ -97,7 +102,13 @@ export default function DashboardLayout({
 
         {/* Main content */}
         <main className="flex-1 transition-all duration-300 ease-in-out">
-          <div className="container py-6 md:py-10 max-w-full">{children}</div>
+          <div className={cn(
+            isChatPage 
+              ? "h-full" 
+              : "container py-6 md:py-10 max-w-full"
+          )}>
+            {children}
+          </div>
         </main>
       </div>
     </div>
