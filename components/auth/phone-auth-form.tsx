@@ -25,8 +25,9 @@ export function PhoneAuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get("redirect") || "/dashboard";
+  const phoneParam = searchParams?.get("phone") || "";
 
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(phoneParam);
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +88,122 @@ export function PhoneAuthForm() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  // Normalize phone number to international format
+  const normalizePhoneNumber = (phoneNumber: string): string => {
+    // Remove all non-digit characters
+    const digitsOnly = phoneNumber.replace(/\D/g, "");
+
+    // If empty, return as is
+    if (!digitsOnly) return phoneNumber;
+
+    // If already starts with +, just clean it up
+    if (phoneNumber.startsWith("+")) {
+      return "+" + digitsOnly;
+    }
+
+    // If starts with 00, replace with +
+    if (digitsOnly.startsWith("00")) {
+      return "+" + digitsOnly.substring(2);
+    }
+
+    // US/Canada numbers (10 digits without country code)
+    if (digitsOnly.length === 10) {
+      return "+1" + digitsOnly;
+    }
+
+    // US/Canada numbers (11 digits starting with 1)
+    if (digitsOnly.length === 11 && digitsOnly.startsWith("1")) {
+      return "+" + digitsOnly;
+    }
+
+    // UK numbers starting with 0 (remove 0, add +44)
+    if (digitsOnly.startsWith("0") && digitsOnly.length === 11) {
+      return "+44" + digitsOnly.substring(1);
+    }
+
+    // UK numbers already with country code (44)
+    if (
+      digitsOnly.startsWith("44") &&
+      (digitsOnly.length === 12 || digitsOnly.length === 13)
+    ) {
+      return "+" + digitsOnly;
+    }
+
+    // Germany numbers starting with 0 (remove 0, add +49)
+    if (
+      digitsOnly.startsWith("0") &&
+      digitsOnly.length >= 11 &&
+      digitsOnly.length <= 12
+    ) {
+      return "+49" + digitsOnly.substring(1);
+    }
+
+    // Germany numbers already with country code (49)
+    if (
+      digitsOnly.startsWith("49") &&
+      digitsOnly.length >= 12 &&
+      digitsOnly.length <= 14
+    ) {
+      return "+" + digitsOnly;
+    }
+
+    // France numbers starting with 0 (remove 0, add +33)
+    if (digitsOnly.startsWith("0") && digitsOnly.length === 10) {
+      return "+33" + digitsOnly.substring(1);
+    }
+
+    // France numbers already with country code (33)
+    if (digitsOnly.startsWith("33") && digitsOnly.length === 11) {
+      return "+" + digitsOnly;
+    }
+
+    // Italy numbers starting with 0 (remove 0, add +39)
+    if (
+      digitsOnly.startsWith("0") &&
+      digitsOnly.length >= 9 &&
+      digitsOnly.length <= 11
+    ) {
+      return "+39" + digitsOnly.substring(1);
+    }
+
+    // Italy numbers already with country code (39)
+    if (
+      digitsOnly.startsWith("39") &&
+      digitsOnly.length >= 10 &&
+      digitsOnly.length <= 13
+    ) {
+      return "+" + digitsOnly;
+    }
+
+    // Spain numbers starting with 0 (remove 0, add +34)
+    if (digitsOnly.startsWith("0") && digitsOnly.length === 10) {
+      return "+34" + digitsOnly.substring(1);
+    }
+
+    // Spain numbers already with country code (34)
+    if (digitsOnly.startsWith("34") && digitsOnly.length === 11) {
+      return "+" + digitsOnly;
+    }
+
+    // Netherlands numbers starting with 0 (remove 0, add +31)
+    if (digitsOnly.startsWith("0") && digitsOnly.length === 10) {
+      return "+31" + digitsOnly.substring(1);
+    }
+
+    // Netherlands numbers already with country code (31)
+    if (digitsOnly.startsWith("31") && digitsOnly.length === 11) {
+      return "+" + digitsOnly;
+    }
+
+    // Default: add + if not present and number looks valid (7+ digits)
+    if (digitsOnly.length >= 7) {
+      return "+" + digitsOnly;
+    }
+
+    // Return original if can't determine format
+    return phoneNumber;
+  };
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -98,18 +215,22 @@ export function PhoneAuthForm() {
     setIsLoading(true);
 
     try {
-      // Validate phone number format
+      // Normalize phone number to international format
+      const normalizedPhone = normalizePhoneNumber(phone);
+
+      // Update the phone state with normalized version
+      setPhone(normalizedPhone);
+
+      // Validate normalized phone number format
       const phoneRegex = /^\+[1-9]\d{1,14}$/;
-      if (!phoneRegex.test(phone)) {
-        setError(
-          "Please enter a valid phone number including country code (e.g., +1234567890)"
-        );
+      if (!phoneRegex.test(normalizedPhone)) {
+        setError("Please enter a valid phone number");
         setIsLoading(false);
         submitAttemptRef.current = false;
         return;
       }
 
-      const { error } = await signInWithPhone(phone);
+      const { error } = await signInWithPhone(normalizedPhone);
 
       if (error) {
         setError(error.message);
@@ -226,7 +347,9 @@ export function PhoneAuthForm() {
     setOtp("");
 
     try {
-      const { error } = await signInWithPhone(phone);
+      const normalizedPhone = normalizePhoneNumber(phone);
+      setPhone(normalizedPhone);
+      const { error } = await signInWithPhone(normalizedPhone);
 
       if (error) {
         setError(error.message);
