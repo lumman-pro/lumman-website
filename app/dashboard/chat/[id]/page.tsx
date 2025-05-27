@@ -3,24 +3,57 @@
 import type React from "react";
 
 import { useParams, useRouter } from "next/navigation";
-import { useChatMessages } from "@/hooks/use-data-fetching";
+import {
+  useChatMessages,
+  useUpdateChatStatus,
+  useUserData,
+} from "@/hooks/use-data-fetching";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
-import { Menu } from "lucide-react";
+import { Menu, Send, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { ChatDropdown } from "@/components/chat/chat-dropdown";
+import { DeleteChatModal } from "@/components/chat/delete-chat-modal";
+import { useState } from "react";
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const chatId = params?.id as string;
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isDeleteChatModalOpen, setIsDeleteChatModalOpen] = useState(false);
+  const { toast } = useToast();
+
+  // Use React Query hooks
+  const updateChatStatus = useUpdateChatStatus();
+  const { data: userData } = useUserData();
 
   // Function to trigger sidebar toggle via custom event
   const toggleSidebar = () => {
     window.dispatchEvent(new CustomEvent("toggleSidebar"));
   };
 
-  // Use React Query hooks
+  // Function to send chat for evaluation
+  const handleSendForEvaluation = async () => {
+    try {
+      // Check if user has name and email
+      if (!userData?.user_name || !userData?.user_email) {
+        // Redirect to account page if profile is incomplete
+        router.push("/dashboard/account");
+        return;
+      }
+
+      await updateChatStatus.mutateAsync({
+        chatId,
+        status: "evaluation_requested",
+      });
+    } catch (error) {
+      console.error("Error sending for evaluation:", error);
+      // Ошибка логируется в консоль, но пользователю не показывается
+    }
+  };
+
   const { data: chatData, isLoading, error } = useChatMessages(chatId);
 
   // Scroll to bottom when messages change
@@ -54,18 +87,21 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b flex items-center">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleSidebar}
-          className="mr-2 md:hidden"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
-        <h1 className="text-lg font-medium">
-          {chatData?.chat?.chat_name || "Chat"}
-        </h1>
+      <div className="p-4 border-b flex items-center justify-between">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="mr-2 md:hidden"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+          <h1 className="text-lg font-medium">
+            {chatData?.chat?.chat_name || "Chat"}
+          </h1>
+        </div>
+        <ChatDropdown onDeleteChat={() => setIsDeleteChatModalOpen(true)} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -83,8 +119,58 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* Send for Evaluation button */}
+        <div className="flex flex-col items-center mt-6">
+          <Button
+            variant="outline"
+            onClick={handleSendForEvaluation}
+            disabled={
+              updateChatStatus.isPending ||
+              chatData?.chat?.status === "evaluation_requested"
+            }
+            className="max-w-xs"
+          >
+            {updateChatStatus.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : chatData?.chat?.status === "evaluation_requested" ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Evaluating
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Send for Evaluation
+              </>
+            )}
+          </Button>
+
+          {/* Evaluation status message */}
+          {chatData?.chat?.status === "evaluation_requested" && (
+            <div className="mt-4 text-center text-sm text-muted-foreground max-w-md">
+              <p className="font-medium">Thanks — we've got it!</p>
+              <p className="mt-1">Evaluation usually takes up to 24 hours.</p>
+              <p className="mt-1">
+                As soon as we've got a rough scope ready, we'll send it your way
+                by email.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Delete Chat Modal */}
+      <DeleteChatModal
+        isOpen={isDeleteChatModalOpen}
+        onClose={() => setIsDeleteChatModalOpen(false)}
+        chatId={chatId}
+        chatName={chatData?.chat?.chat_name}
+      />
     </div>
   );
 }

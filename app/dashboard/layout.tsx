@@ -11,9 +11,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { AccountDropdown } from "@/components/account/account-dropdown";
 import { DeleteAccountModal } from "@/components/account/delete-account-modal";
-import { ChatDropdown } from "@/components/chat/chat-dropdown";
-import { DeleteChatModal } from "@/components/chat/delete-chat-modal";
-import { useChatMessages } from "@/hooks/use-data-fetching";
 
 export default function DashboardLayout({
   children,
@@ -23,22 +20,13 @@ export default function DashboardLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeleteChatModalOpen, setIsDeleteChatModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  // Check if current page is a chat page
+    // Check if current page is a chat page
   const isChatPage = pathname?.includes("/dashboard/chat/");
   // Check if current page is account page
   const isAccountPage = pathname === "/dashboard/account";
-  
-  // Extract chat ID from pathname
-  const chatId = isChatPage ? pathname?.split("/").pop() : null;
-  
-  // Get chat data for the dropdown
-  const { data: chatData } = useChatMessages(chatId || "", {
-    enabled: !!chatId,
-  });
 
   // Handle sidebar toggle
   const toggleSidebar = () => {
@@ -131,14 +119,9 @@ export default function DashboardLayout({
         {/* Account dropdown menu */}
         {isAccountPage && (
           <div className="fixed top-4 right-4 z-50">
-            <AccountDropdown onDeleteAccount={() => setIsDeleteModalOpen(true)} />
-          </div>
-        )}
-
-        {/* Chat dropdown menu */}
-        {isChatPage && chatId && (
-          <div className="fixed top-4 right-4 z-50">
-            <ChatDropdown onDeleteChat={() => setIsDeleteChatModalOpen(true)} />
+            <AccountDropdown
+              onDeleteAccount={() => setIsDeleteModalOpen(true)}
+            />
           </div>
         )}
 
@@ -182,16 +165,6 @@ export default function DashboardLayout({
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
       />
-
-      {/* Delete Chat Modal */}
-      {chatId && (
-        <DeleteChatModal
-          isOpen={isDeleteChatModalOpen}
-          onClose={() => setIsDeleteChatModalOpen(false)}
-          chatId={chatId}
-          chatName={chatData?.chat?.chat_name}
-        />
-      )}
     </div>
   );
 }

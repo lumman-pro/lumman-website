@@ -190,13 +190,13 @@ export default function AccountPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="user_email">Email</Label>
+            <Label htmlFor="user_email">Work email</Label>
             <Input
               id="user_email"
               name="user_email"
               value={formData.user_email}
               onChange={handleInputChange}
-              placeholder="your.email@example.com"
+              placeholder="you@company.com"
               className={
                 validationErrors.user_email ? "border-destructive" : ""
               }
