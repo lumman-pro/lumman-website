@@ -7,13 +7,18 @@ import { useChatMessages } from "@/hooks/use-data-fetching";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
+import { Menu } from "lucide-react";
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const chatId = params?.id as string;
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Function to trigger sidebar toggle via custom event
+  const toggleSidebar = () => {
+    window.dispatchEvent(new CustomEvent("toggleSidebar"));
+  };
 
   // Use React Query hooks
   const { data: chatData, isLoading, error } = useChatMessages(chatId);
@@ -53,10 +58,10 @@ export default function ChatPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push("/dashboard")}
-          className="mr-2"
+          onClick={toggleSidebar}
+          className="mr-2 md:hidden"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <Menu className="h-4 w-4" />
         </Button>
         <h1 className="text-lg font-medium">
           {chatData?.chat?.chat_name || "Chat"}

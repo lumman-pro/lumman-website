@@ -34,11 +34,14 @@ export function DeleteAccountModal({
         throw new Error(result.error);
       }
 
-      // Success case - server action handles redirect and signout
+      // Success case - show toast and redirect to home
       toast({
         title: "Account deleted",
         description: "Your account has been successfully deleted.",
       });
+
+      // Redirect to home page after successful deletion
+      router.replace("/");
     } catch (error) {
       console.error("Error deleting account:", error);
       toast({
