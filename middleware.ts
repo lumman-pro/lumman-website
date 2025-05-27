@@ -110,7 +110,7 @@ export async function middleware(request: NextRequest) {
 
 // Helper function to determine if a route requires authentication
 function isProtectedRoute(pathname: string): boolean {
-  const protectedPaths = ["/dashboard", "/account"];
+  const protectedPaths = ["/dashboard"];
   return protectedPaths.some((path) => pathname.startsWith(path));
 }
 
