@@ -130,7 +130,7 @@ export function Header({
 
         {/* Right: Navigation - same for both authenticated and non-authenticated users */}
         <nav className="flex items-center space-x-6">
-          {/*<Link
+          <Link
             href="/insights"
             className={cn(
               "text-sm transition-colors duration-300 ease-in-out font-medium",
@@ -155,7 +155,7 @@ export function Header({
                 </span>
               </Button>
             </Link>
-          )}*/}
+          )}
         </nav>
       </div>
     </header>
