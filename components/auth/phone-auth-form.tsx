@@ -21,12 +21,18 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
+// Clean phone number - remove all non-digit characters
+const cleanPhoneNumber = (phoneNumber: string): string => {
+  return phoneNumber.replace(/\D/g, "");
+};
+
 export function PhoneAuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get("redirect") || "/dashboard";
+  const phoneParam = searchParams?.get("phone") || "";
 
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(cleanPhoneNumber(phoneParam));
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [isLoading, setIsLoading] = useState(false);
@@ -98,18 +104,20 @@ export function PhoneAuthForm() {
     setIsLoading(true);
 
     try {
+      // Clean phone number and add + prefix
+      const cleanedPhone = cleanPhoneNumber(phone);
+      const formattedPhone = "+" + cleanedPhone;
+
       // Validate phone number format
       const phoneRegex = /^\+[1-9]\d{1,14}$/;
-      if (!phoneRegex.test(phone)) {
-        setError(
-          "Please enter a valid phone number including country code (e.g., +1234567890)"
-        );
+      if (!phoneRegex.test(formattedPhone)) {
+        setError("Please enter a valid phone number");
         setIsLoading(false);
         submitAttemptRef.current = false;
         return;
       }
 
-      const { error } = await signInWithPhone(phone);
+      const { error } = await signInWithPhone(formattedPhone);
 
       if (error) {
         setError(error.message);
@@ -226,7 +234,9 @@ export function PhoneAuthForm() {
     setOtp("");
 
     try {
-      const { error } = await signInWithPhone(phone);
+      const cleanedPhone = cleanPhoneNumber(phone);
+      const formattedPhone = "+" + cleanedPhone;
+      const { error } = await signInWithPhone(formattedPhone);
 
       if (error) {
         setError(error.message);
@@ -271,15 +281,21 @@ export function PhoneAuthForm() {
           <form onSubmit={handleSendOtp} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Phone number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="Phone number including country code"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                  +
+                </span>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Phone number including country code"
+                  value={phone}
+                  onChange={(e) => setPhone(cleanPhoneNumber(e.target.value))}
+                  required
+                  disabled={isLoading}
+                  className="pl-8"
+                />
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
