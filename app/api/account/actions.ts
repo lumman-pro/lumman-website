@@ -9,7 +9,7 @@ import { handleSupabaseError } from "@/lib/utils";
 // Update the deleteAccount function
 export async function deleteAccount() {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
     // Get the current user
     const {
@@ -130,7 +130,7 @@ export async function updateUserProfile(updates: {
   company_url?: string | null;
 }) {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
     // Get the current user
     const {

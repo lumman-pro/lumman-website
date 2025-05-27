@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 
 export async function getServerSession() {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     const {
       data: { session },

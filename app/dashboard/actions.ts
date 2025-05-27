@@ -8,7 +8,7 @@ import { handleSupabaseError } from "@/lib/utils"
 // Update the deleteConversation function
 export async function deleteConversation(id: string) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     // Get the current user
     const {
@@ -72,7 +72,7 @@ export async function updateConversation(
   },
 ) {
   try {
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     // Get the current user
     const {

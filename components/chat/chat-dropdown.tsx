@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,13 @@ import {
 
 interface ChatDropdownProps {
   onDeleteChat: () => void;
+  isDeleting?: boolean;
 }
 
-export function ChatDropdown({ onDeleteChat }: ChatDropdownProps) {
+export function ChatDropdown({
+  onDeleteChat,
+  isDeleting = false,
+}: ChatDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -28,9 +32,17 @@ export function ChatDropdown({ onDeleteChat }: ChatDropdownProps) {
       >
         <DropdownMenuItem
           onClick={onDeleteChat}
+          disabled={isDeleting}
           className="text-destructive focus:text-destructive"
         >
-          Delete chat
+          {isDeleting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Deleting...
+            </>
+          ) : (
+            "Delete chat"
+          )}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

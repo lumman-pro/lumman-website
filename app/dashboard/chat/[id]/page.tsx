@@ -8,22 +8,24 @@ import {
   useUpdateChatStatus,
   useUserData,
 } from "@/hooks/use-data-fetching";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { Menu, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ChatDropdown } from "@/components/chat/chat-dropdown";
-import { DeleteChatModal } from "@/components/chat/delete-chat-modal";
 import { useState } from "react";
+import { deleteConversation } from "@/app/dashboard/actions";
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const chatId = params?.id as string;
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isDeleteChatModalOpen, setIsDeleteChatModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Use React Query hooks
   const updateChatStatus = useUpdateChatStatus();
@@ -54,7 +56,37 @@ export default function ChatPage() {
     }
   };
 
+  // Function to delete chat directly
+  const handleDeleteChat = async () => {
+    try {
+      setIsDeleting(true);
+
+      // Call server action to delete chat
+      const result = await deleteConversation(chatId);
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      // Invalidate chats cache to update the UI
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+
+      // Redirect to dashboard after successful deletion
+      router.replace("/dashboard");
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+      setIsDeleting(false);
+    }
+  };
+
   const { data: chatData, isLoading, error } = useChatMessages(chatId);
+
+  // Redirect to dashboard if chat not found
+  useEffect(() => {
+    if (error && error.message.includes("Chat not found")) {
+      router.replace("/dashboard");
+    }
+  }, [error, router]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -74,12 +106,34 @@ export default function ChatPage() {
   }
 
   if (error) {
+    // If chat not found, show loading while redirecting
+    if (error.message.includes("Chat not found")) {
+      return (
+        <div className="flex flex-col h-full p-4">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-muted-foreground">Redirecting...</div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col h-full p-4">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-destructive text-center">
             {error instanceof Error ? error.message : "Failed to load chat"}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render content if chat data is missing
+  if (!chatData?.chat) {
+    return (
+      <div className="flex flex-col h-full p-4">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-muted-foreground">Chat not found...</div>
         </div>
       </div>
     );
@@ -101,7 +155,7 @@ export default function ChatPage() {
             {chatData?.chat?.chat_name || "Chat"}
           </h1>
         </div>
-        <ChatDropdown onDeleteChat={() => setIsDeleteChatModalOpen(true)} />
+        <ChatDropdown onDeleteChat={handleDeleteChat} isDeleting={isDeleting} />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -163,14 +217,6 @@ export default function ChatPage() {
 
         <div ref={messagesEndRef} />
       </div>
-
-      {/* Delete Chat Modal */}
-      <DeleteChatModal
-        isOpen={isDeleteChatModalOpen}
-        onClose={() => setIsDeleteChatModalOpen(false)}
-        chatId={chatId}
-        chatName={chatData?.chat?.chat_name}
-      />
     </div>
   );
 }
