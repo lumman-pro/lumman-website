@@ -7,7 +7,8 @@ import { SidebarNavigation } from "@/components/sidebar-navigation";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
 
 export default function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default function DashboardLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   // Check if current page is a chat page
   const isChatPage = pathname?.includes("/dashboard/chat/");
@@ -25,6 +27,32 @@ export default function DashboardLayout({
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  // Check authentication session
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace("/");
+        return;
+      }
+    };
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        router.replace("/");
+      }
+    });
+
+    checkSession();
+
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
@@ -46,12 +74,18 @@ export default function DashboardLayout({
       }
     };
 
+    const handleToggleSidebar = () => {
+      setIsSidebarOpen(!isSidebarOpen);
+    };
+
     setIsMounted(true);
     window.addEventListener("resize", handleResize);
+    window.addEventListener("toggleSidebar", handleToggleSidebar);
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("toggleSidebar", handleToggleSidebar);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isSidebarOpen]);
@@ -64,7 +98,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen flex-col bg-background transition-colors duration-300 ease-in-out">
       <div className="flex flex-1 relative">
         {/* Mobile menu toggle button */}
-        {!isSidebarOpen && (
+        {!isSidebarOpen && !isChatPage && (
           <Button
             variant="ghost"
             size="icon"
@@ -102,11 +136,11 @@ export default function DashboardLayout({
 
         {/* Main content */}
         <main className="flex-1 transition-all duration-300 ease-in-out">
-          <div className={cn(
-            isChatPage 
-              ? "h-full" 
-              : "container py-6 md:py-10 max-w-full"
-          )}>
+          <div
+            className={cn(
+              isChatPage ? "h-full" : "container py-6 md:py-10 max-w-full"
+            )}
+          >
             {children}
           </div>
         </main>

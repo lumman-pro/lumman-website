@@ -12,6 +12,7 @@ export function LukeButton() {
   >("idle");
   const conversationRef = useRef<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   // Initialize the conversation hook
   const conversation = useConversation({
@@ -22,6 +23,12 @@ export function LukeButton() {
     onDisconnect: () => {
       setConversationState("idle");
       console.log("Disconnected from Luke");
+
+      // Stop microphone when conversation ends
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
+      }
     },
     onMessage: (message) => {
       console.log("Received message:", message);
@@ -63,8 +70,11 @@ export function LukeButton() {
       setConversationState("connecting");
 
       try {
-        // Request microphone access
-        await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Request microphone access and store the stream
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        mediaStreamRef.current = stream;
 
         // Always use signed URL for private agents (no more public agent support)
         try {
@@ -103,9 +113,21 @@ export function LukeButton() {
       // If already connected, end the session
       try {
         await conversation.endSession();
+
+        // Stop microphone when manually ending session
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+          mediaStreamRef.current = null;
+        }
       } catch (err) {
         console.error("Error ending session:", err);
         setConversationState("idle"); // Still set to idle even if there's an error ending
+
+        // Stop microphone even if there's an error
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+          mediaStreamRef.current = null;
+        }
       }
     }
   };
@@ -120,6 +142,12 @@ export function LukeButton() {
         } catch (err) {
           console.error("Error ending session during cleanup:", err);
         }
+      }
+
+      // Stop microphone on cleanup
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
       }
     };
   }, [conversationState]);

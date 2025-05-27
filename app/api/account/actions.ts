@@ -110,7 +110,6 @@ export async function deleteAccount() {
     await supabase.auth.signOut();
 
     revalidatePath("/");
-    redirect("/");
   } catch (err) {
     console.error("Error deleting account:", err);
     return {
