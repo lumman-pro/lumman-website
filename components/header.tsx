@@ -29,7 +29,7 @@ export function Header({
     // Check if user is logged in
     const checkUser = async () => {
       try {
-        if (!supabase) return; // Ensure supabase is available
+        if (!supabase) return; // Ensure supabase is available and good to go
 
         const {
           data: { session },
