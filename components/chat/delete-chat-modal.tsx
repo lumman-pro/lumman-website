@@ -1,0 +1,117 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { X, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { handleSupabaseError } from "@/lib/utils";
+import { deleteConversation } from "@/app/dashboard/actions";
+
+interface DeleteChatModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  chatId: string;
+  chatName?: string;
+}
+
+export function DeleteChatModal({
+  isOpen,
+  onClose,
+  chatId,
+  chatName,
+}: DeleteChatModalProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  if (!isOpen) return null;
+
+  const handleDeleteChat = async () => {
+    try {
+      setIsDeleting(true);
+
+      // Call server action to delete chat
+      const result = await deleteConversation(chatId);
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      // Success case - show toast and redirect to dashboard
+      toast({
+        title: "Chat deleted",
+        description: "The chat has been successfully deleted.",
+      });
+
+      // Redirect to dashboard after successful deletion
+      router.replace("/dashboard");
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+      toast({
+        title: "Error",
+        description: handleSupabaseError(
+          error,
+          "handleDeleteChat",
+          "Failed to delete chat. Please try again."
+        ),
+        variant: "destructive",
+      });
+      setIsDeleting(false);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+      <div className="flex justify-end p-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          disabled={isDeleting}
+        >
+          <X className="h-6 w-6" />
+          <span className="sr-only">Close</span>
+        </Button>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-between p-6">
+        <div className="w-full">
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={handleDeleteChat}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting chat...
+              </>
+            ) : (
+              "I understand and confirm deletion"
+            )}
+          </Button>
+        </div>
+
+        <div className="text-center max-w-md">
+          <p className="text-lg font-medium text-destructive mb-2">Warning</p>
+          <p className="text-muted-foreground">
+            {chatName ? `"${chatName}"` : "This chat"} will be permanently
+            deleted. This action cannot be undone.
+          </p>
+        </div>
+
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={onClose}
+          disabled={isDeleting}
+        >
+          Back
+        </Button>
+      </div>
+    </div>
+  );
+}
