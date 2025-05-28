@@ -107,8 +107,9 @@
 
   body {
     @apply bg-background text-foreground;
-    transition: background-color var(--theme-transition-duration) var(--theme-transition-easing), color
-      var(--theme-transition-duration) var(--theme-transition-easing);
+    transition: background-color var(--theme-transition-duration)
+        var(--theme-transition-easing),
+      color var(--theme-transition-duration) var(--theme-transition-easing);
   }
 
   h1,
@@ -117,7 +118,8 @@
   h4,
   h5,
   h6 {
-    transition: color var(--theme-transition-duration) var(--theme-transition-easing);
+    transition: color var(--theme-transition-duration)
+      var(--theme-transition-easing);
   }
 
   /* Fix for logo loading */
@@ -129,15 +131,16 @@
 
 @layer utilities {
   .animate-accordion-down {
-    animation: accordion-down 0.2s ease-out;
+    animation: accordion-down 300ms ease-out;
   }
 
   .animate-accordion-up {
-    animation: accordion-up 0.2s ease-out;
+    animation: accordion-up 300ms ease-in;
   }
 
   .transition-theme {
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-property: color, background-color, border-color,
+      text-decoration-color, fill, stroke;
     transition-timing-function: var(--theme-transition-easing);
     transition-duration: var(--theme-transition-duration);
   }
