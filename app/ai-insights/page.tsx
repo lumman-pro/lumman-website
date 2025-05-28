@@ -1,11 +1,94 @@
 import type { Metadata } from "next";
+import {
+  getSEODataServer,
+  generateCanonicalUrl,
+  generateBreadcrumbSchema,
+} from "@/lib/seo";
+import JsonLd from "@/components/seo/JsonLd";
 import InsightsPageClient from "./InsightsPageClient";
 
-export const metadata: Metadata = {
-  title: "AI Insights | Lumman.ai",
-  description: "Thoughts on AI, automation, and business transformation",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seoData = await getSEODataServer("/ai-insights");
+
+  const canonicalUrl = generateCanonicalUrl("/ai-insights");
+
+  return {
+    title:
+      seoData?.meta_title ||
+      "AI Insights - Expert Analysis on AI Automation & Strategy | Lumman AI",
+    description:
+      seoData?.meta_description ||
+      "Discover expert insights on AI automation, business transformation, and AI strategy. Stay ahead with the latest trends in artificial intelligence and machine learning.",
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title:
+        seoData?.meta_title ||
+        "AI Insights - Expert Analysis on AI Automation & Strategy",
+      description:
+        seoData?.meta_description ||
+        "Discover expert insights on AI automation, business transformation, and AI strategy. Stay ahead with the latest trends in artificial intelligence and machine learning.",
+      url: canonicalUrl,
+      type: "website",
+      images: seoData?.og_image_url
+        ? [
+            {
+              url: seoData.og_image_url,
+              width: 1200,
+              height: 630,
+              alt: "AI Insights - Expert Analysis on AI Automation & Strategy",
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title:
+        seoData?.meta_title ||
+        "AI Insights - Expert Analysis on AI Automation & Strategy",
+      description:
+        seoData?.meta_description ||
+        "Discover expert insights on AI automation, business transformation, and AI strategy.",
+      images: seoData?.og_image_url ? [seoData.og_image_url] : undefined,
+    },
+    robots: seoData?.robots_directive || "index,follow",
+  };
+}
 
 export default function InsightsPage() {
-  return <InsightsPageClient />;
+  // Generate breadcrumb schema
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: "https://lumman.ai" },
+    { name: "AI Insights", url: "https://lumman.ai/ai-insights" },
+  ]);
+
+  // Blog schema
+  const blogSchema = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: "AI Insights",
+    description:
+      "Expert insights on AI automation, business transformation, and AI strategy",
+    url: "https://lumman.ai/ai-insights",
+    publisher: {
+      "@type": "Organization",
+      name: "Lumman AI",
+      url: "https://lumman.ai",
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": "https://lumman.ai/ai-insights",
+    },
+  };
+
+  return (
+    <>
+      {/* JSON-LD structured data */}
+      <JsonLd data={breadcrumbSchema} />
+      <JsonLd data={blogSchema} />
+
+      <InsightsPageClient />
+    </>
+  );
 }
