@@ -7,23 +7,32 @@ import { SupabaseProvider } from "@/providers/supabase-provider";
 import { ReactQueryProvider } from "@/providers/query-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/next";
+import JsonLd from "@/components/seo/JsonLd";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Lumman AI",
+  title: {
+    default: "Lumman AI - AI R&D Lab for Business Automation",
+    template: "%s | Lumman AI",
+  },
   description:
     "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
   generator: "Next.js",
   applicationName: "Lumman AI",
   keywords: [
-    "AI",
-    "automation",
-    "R&D",
+    "AI automation",
     "artificial intelligence",
     "business automation",
+    "AI R&D lab",
+    "AI consulting",
+    "machine learning",
+    "AI strategy",
+    "AI agents",
+    "process automation",
+    "digital transformation",
   ],
-  authors: [{ name: "Lumman AI" }],
+  authors: [{ name: "Lumman AI", url: "https://lumman.ai" }],
   creator: "Lumman AI",
   publisher: "Lumman AI",
   formatDetection: {
@@ -40,7 +49,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Lumman AI",
+    title: "Lumman AI - AI R&D Lab for Business Automation",
     description:
       "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
     url:
@@ -50,12 +59,32 @@ export const metadata: Metadata = {
     siteName: "Lumman AI",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Lumman AI - AI R&D Lab for Business Automation",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lumman AI",
+    title: "Lumman AI - AI R&D Lab for Business Automation",
     description:
       "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   icons: {
     icon: [
@@ -89,6 +118,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Lumman AI",
   },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 export const viewport: Viewport = {
@@ -99,6 +131,30 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+// Organization Schema.org data
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Lumman AI",
+  description:
+    "AI R&D Lab helping companies automate operations and evolve using AI",
+  url: "https://lumman.ai",
+  logo: "https://lumman.ai/logo.png",
+  sameAs: [
+    "https://linkedin.com/company/lumman-ai",
+    "https://twitter.com/lumman_ai",
+  ],
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer service",
+    email: "hello@lumman.ai",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "US",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -106,6 +162,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <JsonLd data={organizationSchema} />
+      </head>
       <body className={inter.className}>
         <SupabaseProvider>
           <ReactQueryProvider>

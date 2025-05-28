@@ -1,121 +1,210 @@
-"use client";
-
-import { useParams, useRouter } from "next/navigation";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { useInsightBySlug } from "@/hooks/use-data-fetching";
+import Image from "next/image";
+import { createServerSupabaseClient } from "@/lib/supabase/server-client";
 import { formatDate } from "@/lib/utils";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
-import { PostSkeleton } from "@/components/insights/post-skeleton";
+import {
+  getPostSEODataServer,
+  generateCanonicalUrl,
+  generateBreadcrumbSchema,
+} from "@/lib/seo";
+import JsonLd from "@/components/seo/JsonLd";
 
-export default function PostPage() {
-  const params = useParams();
-  const router = useRouter();
-  const slug = params?.slug as string;
+interface PostPageProps {
+  params: {
+    slug: string;
+  };
+}
 
-  // Use React Query hook
-  const { data: post, isLoading, error } = useInsightBySlug(slug);
+// Generate metadata for SEO
+export async function generateMetadata({
+  params,
+}: PostPageProps): Promise<Metadata> {
+  const seoData = await getPostSEODataServer(params.slug);
 
-  // If post not found after loading, redirect to 404
-  if (!isLoading && !post) {
-    router.push("/404");
+  if (!seoData) {
+    return {
+      title: "Post Not Found",
+      description: "The requested blog post could not be found.",
+    };
+  }
+
+  const canonicalUrl = generateCanonicalUrl(`/ai-insights/${params.slug}`);
+
+  return {
+    title: seoData.meta_title,
+    description: seoData.meta_description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: seoData.meta_title,
+      description: seoData.meta_description,
+      url: canonicalUrl,
+      type: "article",
+      publishedTime: seoData.post_data?.published_at,
+      modifiedTime: seoData.post_data?.updated_at,
+      authors: seoData.post_data?.author?.name
+        ? [seoData.post_data.author.name]
+        : undefined,
+      images: seoData.og_image_url
+        ? [
+            {
+              url: seoData.og_image_url,
+              width: 1200,
+              height: 630,
+              alt: seoData.meta_title,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seoData.meta_title,
+      description: seoData.meta_description,
+      images: seoData.og_image_url ? [seoData.og_image_url] : undefined,
+    },
+    robots: seoData.robots_directive || "index,follow",
+  };
+}
+
+async function getPost(slug: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: post, error } = await supabase
+    .from("insights_posts")
+    .select(
+      `
+      *,
+      categories:insights_post_categories(
+        category:insights_categories(*)
+      ),
+      author:insights_authors(*)
+    `
+    )
+    .eq("slug", slug)
+    .eq("status", "published")
+    .single();
+
+  if (error || !post) {
     return null;
   }
 
-  if (isLoading) {
-    return <PostSkeleton />;
+  return {
+    ...post,
+    categories: post.categories?.map((pc: any) => pc.category) || [],
+  };
+}
+
+export default async function PostPage({ params }: PostPageProps) {
+  const post = await getPost(params.slug);
+  const seoData = await getPostSEODataServer(params.slug);
+
+  if (!post) {
+    notFound();
   }
 
-  if (error) {
-    return (
-      <div className="container max-w-3xl py-12 md:py-24">
-        <div className="text-destructive text-center">
-          {error instanceof Error ? error.message : "Failed to load post"}
-        </div>
-      </div>
-    );
-  }
+  // Generate breadcrumb schema
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: "https://lumman.ai" },
+    { name: "AI Insights", url: "https://lumman.ai/ai-insights" },
+    { name: post.title, url: `https://lumman.ai/ai-insights/${post.slug}` },
+  ]);
 
   return (
-    <div className="container max-w-3xl py-12 md:py-24">
-      <article className="space-y-8">
-        <div className="space-y-4">
-          <Link
-            href="/ai-insights"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 ease-in-out"
-          >
-            ← Back to AI Insights
-          </Link>
+    <>
+      {/* JSON-LD structured data */}
+      <JsonLd data={breadcrumbSchema} />
+      {seoData?.schema_data && <JsonLd data={seoData.schema_data} />}
 
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-foreground transition-colors duration-300 ease-in-out">
-            {post.title}
-          </h1>
+      <div className="container max-w-3xl py-12 md:py-24">
+        <article className="space-y-8">
+          <div className="space-y-4">
+            <Link
+              href="/ai-insights"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300 ease-in-out"
+            >
+              ← Back to AI Insights
+            </Link>
 
-          <div className="flex items-center text-sm text-muted-foreground">
-            {post.published_at && (
-              <time dateTime={post.published_at}>
-                {formatDate(new Date(post.published_at))}
-              </time>
-            )}
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-foreground transition-colors duration-300 ease-in-out">
+              {post.title}
+            </h1>
 
-            {post.categories && post.categories.length > 0 && (
-              <>
-                <span className="mx-2">·</span>
-                <div className="flex flex-wrap gap-2">
-                  {post.categories.map((category) => (
-                    <Link
-                      key={category.id}
-                      href={`/ai-insights/category/${category.slug}`}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {category.name}
-                    </Link>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {post.featured_image && (
-          <div className="overflow-hidden">
-            <img
-              src={post.featured_image || "/placeholder.svg"}
-              alt={post.title}
-              className="w-full h-auto object-cover"
-            />
-          </div>
-        )}
-
-        <MarkdownRenderer
-          content={post.content}
-          contentHtml={post.content_html}
-          useHtml={!!post.content_html}
-        />
-
-        {post.author && (
-          <div className="border-t border-border pt-8 mt-12">
-            <div className="flex items-center gap-4">
-              {post.author.avatar_url && (
-                <img
-                  src={post.author.avatar_url || "/placeholder.svg"}
-                  alt={post.author.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
+            <div className="flex items-center text-sm text-muted-foreground">
+              {post.published_at && (
+                <time dateTime={post.published_at}>
+                  {formatDate(new Date(post.published_at))}
+                </time>
               )}
-              <div>
-                <h3 className="font-medium text-foreground transition-colors duration-300 ease-in-out">
-                  {post.author.name}
-                </h3>
-                {post.author.bio && (
-                  <p className="text-sm text-muted-foreground transition-colors duration-300 ease-in-out">
-                    {post.author.bio}
-                  </p>
-                )}
-              </div>
+
+              {post.categories && post.categories.length > 0 && (
+                <>
+                  <span className="mx-2">·</span>
+                  <div className="flex flex-wrap gap-2">
+                    {post.categories.map((category: any) => (
+                      <Link
+                        key={category.id}
+                        href={`/ai-insights/category/${category.slug}`}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        )}
-      </article>
-    </div>
+
+          {post.featured_image && (
+            <div className="overflow-hidden rounded-lg">
+              <Image
+                src={post.featured_image}
+                alt={post.title}
+                width={800}
+                height={400}
+                className="w-full h-auto object-cover"
+                priority
+              />
+            </div>
+          )}
+
+          <MarkdownRenderer
+            content={post.content}
+            contentHtml={post.content_html}
+            useHtml={!!post.content_html}
+          />
+
+          {post.author && (
+            <div className="border-t border-border pt-8 mt-12">
+              <div className="flex items-center gap-4">
+                {post.author.avatar_url && (
+                  <Image
+                    src={post.author.avatar_url}
+                    alt={post.author.name}
+                    width={48}
+                    height={48}
+                    className="rounded-full object-cover"
+                  />
+                )}
+                <div>
+                  <h3 className="font-medium text-foreground transition-colors duration-300 ease-in-out">
+                    {post.author.name}
+                  </h3>
+                  {post.author.bio && (
+                    <p className="text-sm text-muted-foreground transition-colors duration-300 ease-in-out">
+                      {post.author.bio}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </article>
+      </div>
+    </>
   );
 }
