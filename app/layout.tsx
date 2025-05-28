@@ -1,5 +1,5 @@
 import type React from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -11,9 +11,69 @@ import { Analytics } from "@vercel/analytics/next";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Lumman.ai",
-  description: "AI Automation & Advisory",
-  generator: "v0.dev",
+  title: "Lumman AI",
+  description:
+    "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
+  generator: "Next.js",
+  applicationName: "Lumman AI",
+  keywords: [
+    "AI",
+    "automation",
+    "R&D",
+    "artificial intelligence",
+    "business automation",
+  ],
+  authors: [{ name: "Lumman AI" }],
+  creator: "Lumman AI",
+  publisher: "Lumman AI",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL(
+    process.env.NODE_ENV === "production"
+      ? "https://lumman.ai"
+      : "http://localhost:3000"
+  ),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Lumman AI",
+    description:
+      "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
+    url:
+      process.env.NODE_ENV === "production"
+        ? "https://lumman.ai"
+        : "http://localhost:3000",
+    siteName: "Lumman AI",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lumman AI",
+    description:
+      "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Lumman AI",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

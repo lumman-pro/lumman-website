@@ -29,14 +29,17 @@ export function Header({
     // Check if user is logged in
     const checkUser = async () => {
       try {
-        if (!supabase) return; // Ensure supabase is available and good to go
-
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        setUser(session?.user || null);
+        // Only check auth if supabase is available
+        if (supabase) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          setUser(session?.user || null);
+        }
       } catch (error) {
         console.error("Error checking auth session:", error);
+        // Continue with null user if there's an error
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -44,14 +47,18 @@ export function Header({
 
     checkUser();
 
-    // Set up auth state listener
+    // Set up auth state listener only if supabase is available
     let subscription: { unsubscribe: () => void } | undefined;
 
     if (supabase) {
-      const { data } = supabase.auth.onAuthStateChange((event, session) => {
-        setUser(session?.user || null);
-      });
-      subscription = data.subscription;
+      try {
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
+          setUser(session?.user || null);
+        });
+        subscription = data.subscription;
+      } catch (error) {
+        console.error("Error setting up auth listener:", error);
+      }
     }
 
     return () => {

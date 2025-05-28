@@ -1,0 +1,13 @@
+<svg width="514" height="514" viewBox="0 0 514 514" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .bg { fill: black; }
+    .fg { fill: white; }
+    
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: white; }
+      .fg { fill: black; }
+    }
+  </style>
+  <path d="M1 1H513V513H1V1Z" class="bg"/>
+  <path d="M220 463V70H294V463H220Z" class="fg"/>
+</svg>
