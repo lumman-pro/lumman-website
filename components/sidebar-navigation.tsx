@@ -111,7 +111,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   return (
     <div
       className={cn(
-        "grid grid-rows-[auto_auto_1fr_auto] h-screen w-full bg-background border-r transition-all duration-300 ease-in-out"
+        "grid grid-rows-[auto_auto_1fr_auto] h-screen h-[100svh] w-full bg-background border-r transition-all duration-300 ease-in-out"
       )}
     >
       {/* Logo section */}
