@@ -9,7 +9,7 @@ import {
   useUserData,
 } from "@/hooks/use-data-fetching";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { Menu, Send, Loader2 } from "lucide-react";
@@ -22,7 +22,6 @@ export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const chatId = params?.id as string;
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,13 +87,6 @@ export default function ChatPage() {
     }
   }, [error, router]);
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chatData?.messages]);
-
   if (isLoading) {
     return (
       <div className="flex flex-col h-full p-4">
@@ -106,17 +98,6 @@ export default function ChatPage() {
   }
 
   if (error) {
-    // If chat not found, show loading while redirecting
-    if (error.message.includes("Chat not found")) {
-      return (
-        <div className="flex flex-col h-full p-4">
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-muted-foreground">Redirecting...</div>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="flex flex-col h-full p-4">
         <div className="flex-1 flex items-center justify-center">
@@ -214,8 +195,6 @@ export default function ChatPage() {
             </div>
           )}
         </div>
-
-        <div ref={messagesEndRef} />
       </div>
     </div>
   );
