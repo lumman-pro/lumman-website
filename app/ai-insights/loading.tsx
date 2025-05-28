@@ -6,7 +6,7 @@ export default function InsightsLoading() {
       <div className="space-y-8">
         <div>
           <h1 className="text-4xl font-bold tracking-tighter md:text-5xl text-foreground transition-colors duration-300 ease-in-out mb-4">
-            Insights
+            AI Insights
           </h1>
           <p className="text-muted-foreground text-base font-medium transition-colors duration-300 ease-in-out">
             Thoughts on AI, automation, and business transformation

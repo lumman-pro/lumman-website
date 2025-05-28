@@ -201,7 +201,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
 
       {/* Bottom section with links and user profile */}
       <div className="px-6 py-4">
-        <nav className="space-y-2 -mt-4">
+        <nav className="space-y-2">
           <Link href="/dashboard/account" onClick={onClose}>
             <Button
               variant="ghost"
