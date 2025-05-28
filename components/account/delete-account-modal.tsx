@@ -75,19 +75,12 @@ export function DeleteAccountModal({
       <div className="flex-1 flex flex-col items-center justify-between p-6">
         <div className="w-full">
           <Button
-            variant="destructive"
+            variant="outline"
             className="w-full"
-            onClick={handleDeleteAccount}
+            onClick={onClose}
             disabled={isDeleting}
           >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting account...
-              </>
-            ) : (
-              "I understand and confirm deletion"
-            )}
+            Back
           </Button>
         </div>
 
@@ -100,12 +93,19 @@ export function DeleteAccountModal({
         </div>
 
         <Button
-          variant="outline"
+          variant="destructive"
           className="w-full"
-          onClick={onClose}
+          onClick={handleDeleteAccount}
           disabled={isDeleting}
         >
-          Back
+          {isDeleting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Deleting account...
+            </>
+          ) : (
+            "I understand and confirm deletion"
+          )}
         </Button>
       </div>
     </div>

@@ -1,15 +1,15 @@
-import Link from "next/link"
-import { formatDate } from "@/lib/utils"
-import type { Post } from "@/lib/insights"
+import Link from "next/link";
+import { formatDate } from "@/lib/utils";
+import type { Post } from "@/lib/insights";
 
 interface PostCardProps {
-  post: Post
+  post: Post;
 }
 
 export function PostCard({ post }: PostCardProps) {
   return (
     <article className="space-y-4 transition-colors duration-300 ease-in-out">
-      <Link href={`/insights/${post.slug}`} className="block group">
+      <Link href={`/ai-insights/${post.slug}`} className="block group">
         {post.featured_image && (
           <div className="mb-4 overflow-hidden">
             <img
@@ -25,7 +25,11 @@ export function PostCard({ post }: PostCardProps) {
       </Link>
 
       <div className="flex items-center text-sm text-muted-foreground">
-        {post.published_at && <time dateTime={post.published_at}>{formatDate(new Date(post.published_at))}</time>}
+        {post.published_at && (
+          <time dateTime={post.published_at}>
+            {formatDate(new Date(post.published_at))}
+          </time>
+        )}
 
         {post.categories && post.categories.length > 0 && (
           <>
@@ -34,7 +38,7 @@ export function PostCard({ post }: PostCardProps) {
               {post.categories.map((category) => (
                 <Link
                   key={category.id}
-                  href={`/insights/category/${category.slug}`}
+                  href={`/ai-insights/category/${category.slug}`}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {category.name}
@@ -51,5 +55,5 @@ export function PostCard({ post }: PostCardProps) {
         </p>
       )}
     </article>
-  )
+  );
 }
