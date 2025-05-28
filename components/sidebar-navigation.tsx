@@ -111,7 +111,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
   return (
     <div
       className={cn(
-        "flex flex-col h-full w-full bg-background border-r transition-all duration-300 ease-in-out"
+        "grid grid-rows-[auto_auto_1fr_auto] h-screen h-[100svh] w-full bg-background border-r transition-all duration-300 ease-in-out"
       )}
     >
       {/* Logo section */}
@@ -143,7 +143,7 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       </div>
 
       {/* Scrollable conversations list */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden border-0 outline-0 shadow-none ring-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="min-h-0 overflow-y-auto overflow-x-hidden border-0 outline-0 shadow-none ring-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <div className="px-3 py-2">
           <h3 className="text-xs font-medium text-muted-foreground tracking-wide">
             Recent chats
@@ -200,8 +200,8 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       </div>
 
       {/* Bottom section with links and user profile */}
-      <div className="px-6 py-4 mt-auto">
-        <nav className="space-y-2 -mt-4">
+      <div className="px-6 py-4">
+        <nav className="space-y-2">
           <Link href="/dashboard/account" onClick={onClose}>
             <Button
               variant="ghost"

@@ -7,8 +7,8 @@ import type { Database } from "./database.types"
  * Note: This cannot be a singleton because cookies() must be called
  * in a Server Component or Route Handler context
  */
-export function createServerSupabaseClient() {
-  const cookieStore = cookies()
+export async function createServerSupabaseClient() {
+  const cookieStore = await cookies()
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

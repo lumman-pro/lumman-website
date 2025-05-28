@@ -6,50 +6,54 @@ import { Button } from "@/components/ui/button";
 import { X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { handleSupabaseError } from "@/lib/utils";
-import { deleteAccount } from "@/app/api/account/actions";
+import { deleteConversation } from "@/app/dashboard/actions";
 
-interface DeleteAccountModalProps {
+interface DeleteChatModalProps {
   isOpen: boolean;
   onClose: () => void;
+  chatId: string;
+  chatName?: string;
 }
 
-export function DeleteAccountModal({
+export function DeleteChatModal({
   isOpen,
   onClose,
-}: DeleteAccountModalProps) {
+  chatId,
+  chatName,
+}: DeleteChatModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   if (!isOpen) return null;
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteChat = async () => {
     try {
       setIsDeleting(true);
 
-      // Call server action to delete account
-      const result = await deleteAccount();
+      // Call server action to delete chat
+      const result = await deleteConversation(chatId);
 
       if (result?.error) {
         throw new Error(result.error);
       }
 
-      // Success case - show toast and redirect to home
+      // Success case - show toast and redirect to dashboard
       toast({
-        title: "Account deleted",
-        description: "Your account has been successfully deleted.",
+        title: "Chat deleted",
+        description: "The chat has been successfully deleted.",
       });
 
-      // Redirect to home page after successful deletion
-      router.replace("/");
+      // Redirect to dashboard after successful deletion
+      router.replace("/dashboard");
     } catch (error) {
-      console.error("Error deleting account:", error);
+      console.error("Error deleting chat:", error);
       toast({
         title: "Error",
         description: handleSupabaseError(
           error,
-          "handleDeleteAccount",
-          "Failed to delete account. Please try again."
+          "handleDeleteChat",
+          "Failed to delete chat. Please try again."
         ),
         variant: "destructive",
       });
@@ -75,37 +79,37 @@ export function DeleteAccountModal({
       <div className="flex-1 flex flex-col items-center justify-between p-6">
         <div className="w-full">
           <Button
-            variant="outline"
+            variant="destructive"
             className="w-full"
-            onClick={onClose}
+            onClick={handleDeleteChat}
             disabled={isDeleting}
           >
-            Back
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting chat...
+              </>
+            ) : (
+              "I understand and confirm deletion"
+            )}
           </Button>
         </div>
 
         <div className="text-center max-w-md">
           <p className="text-lg font-medium text-destructive mb-2">Warning</p>
           <p className="text-muted-foreground">
-            All your data will be permanently deleted. This action cannot be
-            undone.
+            {chatName ? `"${chatName}"` : "This chat"} will be permanently
+            deleted. This action cannot be undone.
           </p>
         </div>
 
         <Button
-          variant="destructive"
+          variant="outline"
           className="w-full"
-          onClick={handleDeleteAccount}
+          onClick={onClose}
           disabled={isDeleting}
         >
-          {isDeleting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Deleting account...
-            </>
-          ) : (
-            "I understand and confirm deletion"
-          )}
+          Back
         </Button>
       </div>
     </div>

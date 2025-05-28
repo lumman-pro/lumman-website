@@ -29,7 +29,7 @@ export function Header({
     // Check if user is logged in
     const checkUser = async () => {
       try {
-        if (!supabase) return; // Ensure supabase is available
+        if (!supabase) return; // Ensure supabase is available and good to go
 
         const {
           data: { session },
@@ -131,15 +131,15 @@ export function Header({
         {/* Right: Navigation - same for both authenticated and non-authenticated users */}
         <nav className="flex items-center space-x-6">
           <Link
-            href="/insights"
+            href="/ai-insights"
             className={cn(
               "text-sm transition-colors duration-300 ease-in-out font-medium",
-              isActive("/insights")
+              isActive("/ai-insights")
                 ? "text-foreground"
                 : "text-foreground/80 hover:text-foreground"
             )}
           >
-            Insights
+            AI Insights
           </Link>
 
           {!isLoading && (

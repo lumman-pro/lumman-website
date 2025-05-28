@@ -20,6 +20,7 @@ interface Chat {
   chat_summary: string | null;
   chat_duration: number | null;
   chat_transcription: string | null;
+  status?: string;
 }
 
 interface FetchChatsOptions {
@@ -227,7 +228,7 @@ export function useChatMessages(chatId: string) {
         const { data: chatData, error: chatError } = await supabase
           .from("chats")
           .select(
-            "id, user_id, chat_name, chat_summary, chat_duration, created_at"
+            "id, user_id, chat_name, chat_summary, chat_duration, created_at, status"
           )
           .eq("id", chatId)
           .eq("user_id", user.id)
@@ -316,9 +317,83 @@ export function useCreateChat() {
         chat_summary: null,
         chat_duration: null,
         chat_transcription: null,
+        status: "draft",
       } as Chat;
     },
   };
+}
+
+// Update chat status mutation
+export function useUpdateChatStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      chatId,
+      status,
+    }: {
+      chatId: string;
+      status: string;
+    }) => {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) throw userError;
+        if (!user) throw new Error("User not authenticated");
+
+        const { data, error } = await supabase
+          .from("chats")
+          .update({ status })
+          .eq("id", chatId)
+          .eq("user_id", user.id)
+          .select("*")
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        return data as Chat;
+      } catch (err) {
+        console.error("Error updating chat status:", err);
+        throw new Error(
+          handleSupabaseError(
+            err,
+            "useUpdateChatStatus",
+            "Failed to update chat status"
+          )
+        );
+      }
+    },
+    onSuccess: (data) => {
+      // Update the chat details cache
+      queryClient.setQueryData(["chatDetails", data.id], (oldData: any) => {
+        if (oldData) {
+          return {
+            ...oldData,
+            chat: data,
+          };
+        }
+        return oldData;
+      });
+
+      // Update the chats list cache
+      queryClient.setQueryData(["chats", 20, 0], (oldData: any) => {
+        if (oldData && oldData.chats) {
+          return {
+            ...oldData,
+            chats: oldData.chats.map((chat: Chat) =>
+              chat.id === data.id ? data : chat
+            ),
+          };
+        }
+        return oldData;
+      });
+    },
+  });
 }
 
 // Insights hooks

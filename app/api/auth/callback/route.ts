@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Create a Supabase client
-    const supabase = createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
     // Exchange the code for a session
     const { error } = await supabase.auth.exchangeCodeForSession(code)

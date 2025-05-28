@@ -9,6 +9,8 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { AccountDropdown } from "@/components/account/account-dropdown";
+import { DeleteAccountModal } from "@/components/account/delete-account-modal";
 
 export default function DashboardLayout({
   children,
@@ -17,11 +19,14 @@ export default function DashboardLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  // Check if current page is a chat page
+    // Check if current page is a chat page
   const isChatPage = pathname?.includes("/dashboard/chat/");
+  // Check if current page is account page
+  const isAccountPage = pathname === "/dashboard/account";
 
   // Handle sidebar toggle
   const toggleSidebar = () => {
@@ -111,6 +116,15 @@ export default function DashboardLayout({
           </Button>
         )}
 
+        {/* Account dropdown menu */}
+        {isAccountPage && (
+          <div className="fixed top-4 right-4 z-50">
+            <AccountDropdown
+              onDeleteAccount={() => setIsDeleteModalOpen(true)}
+            />
+          </div>
+        )}
+
         {/* Overlay for mobile */}
         {isSidebarOpen && (
           <div
@@ -145,6 +159,12 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+      />
     </div>
   );
 }
