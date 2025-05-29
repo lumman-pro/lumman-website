@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { formatDate } from "@/lib/utils";
 import type { Post } from "@/lib/insights";
 
@@ -12,10 +13,17 @@ export function PostCard({ post }: PostCardProps) {
       <Link href={`/ai-insights/${post.slug}`} className="block group">
         {post.featured_image && (
           <div className="mb-4 overflow-hidden">
-            <img
-              src={post.featured_image || "/placeholder.svg"}
+            <Image
+              src={post.featured_image}
               alt={post.title}
-              className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+              width={400}
+              height={200}
+              loading="lazy"
+              style={{
+                width: "100%",
+                height: "auto",
+              }}
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
         )}

@@ -4,6 +4,7 @@ import { PhoneAuthForm } from "@/components/auth/phone-auth-form";
 import { useTheme } from "next-themes";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPageClient() {
   const { resolvedTheme } = useTheme();
@@ -29,11 +30,12 @@ export default function LoginPageClient() {
               href="/"
               className="transition-opacity duration-300 ease-in-out hover:opacity-80"
             >
-              <img
-                src={logoSrc || "/placeholder.svg"}
+              <Image
+                src={logoSrc}
                 alt="Lumman.ai"
                 width={150}
                 height={36}
+                priority
                 className="transition-opacity duration-300 ease-in-out"
               />
             </Link>

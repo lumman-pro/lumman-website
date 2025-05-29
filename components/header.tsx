@@ -1,6 +1,7 @@
 "use client";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -83,11 +84,11 @@ export function Header({
   if (!mounted) {
     return (
       <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur transition-colors duration-300 ease-in-out">
-        <div className="container max-w-7xl flex h-16 items-center justify-between">
-          <div className="flex items-center">
+        <div className="container max-w-7xl flex h-16 items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center flex-shrink-0">
             <div className="w-[100px] h-[18.85px] bg-muted/20 rounded animate-pulse" />
           </div>
-          <nav className="flex items-center space-x-6">
+          <nav className="flex items-center space-x-3 sm:space-x-6 flex-shrink-0">
             <div className="w-[60px] h-[20px] bg-muted/20 rounded animate-pulse" />
             <div className="w-[24px] h-[24px] bg-muted/20 rounded-full animate-pulse" />
           </nav>
@@ -101,9 +102,9 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur transition-colors duration-300 ease-in-out">
-      <div className="container max-w-7xl flex h-16 items-center justify-between">
+      <div className="container max-w-7xl flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Left side: Logo and hamburger menu on mobile for authenticated users */}
-        <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0">
           {/* Only show hamburger menu if authenticated AND on dashboard pages */}
           {isAuthenticated && isDashboardPage && (
             <Button
@@ -112,7 +113,7 @@ export function Header({
               aria-label="Menu"
               onClick={onMenuToggle}
               data-sidebar-toggle="true"
-              className="mr-4 md:hidden focus:outline-none"
+              className="mr-2 sm:mr-4 md:hidden focus:outline-none"
             >
               {isMenuOpen ? (
                 <X className="h-5 w-5" />
@@ -122,25 +123,32 @@ export function Header({
             </Button>
           )}
 
-          <Link href="/" className="flex items-center space-x-2">
-            <img
-              src={
-                logoSrc ||
-                (theme === "dark" ? "/lumman_white.svg" : "/lumman_black.svg")
-              }
-              alt="Lumman.ai"
-              width={100}
-              className="h-auto transition-opacity duration-300 ease-in-out"
-            />
+          <Link href="/" className="flex items-center">
+            <div className="relative w-[100px] h-[24px]">
+              <Image
+                src={
+                  logoSrc ||
+                  (theme === "dark" ? "/lumman_white.svg" : "/lumman_black.svg")
+                }
+                alt="Lumman.ai"
+                fill
+                priority
+                sizes="100px"
+                style={{
+                  objectFit: "contain",
+                }}
+                className="transition-opacity duration-300 ease-in-out"
+              />
+            </div>
           </Link>
         </div>
 
         {/* Right: Navigation - same for both authenticated and non-authenticated users */}
-        <nav className="flex items-center space-x-6">
+        <nav className="flex items-center space-x-3 sm:space-x-6 flex-shrink-0">
           <Link
             href="/ai-insights"
             className={cn(
-              "text-sm transition-colors duration-300 ease-in-out font-medium",
+              "text-sm transition-colors duration-300 ease-in-out font-medium whitespace-nowrap",
               isActive("/ai-insights")
                 ? "text-foreground"
                 : "text-foreground/80 hover:text-foreground"
@@ -154,7 +162,7 @@ export function Header({
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-sm bg-transparent border-none transition-colors duration-300 ease-in-out"
+                className="text-sm bg-transparent border-none transition-colors duration-300 ease-in-out flex-shrink-0"
               >
                 <User className="h-4 w-4 text-foreground transition-colors duration-300 ease-in-out" />
                 <span className="sr-only">

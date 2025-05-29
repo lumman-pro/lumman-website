@@ -2,27 +2,50 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { createServerSupabaseClient } from "@/lib/supabase/server-client";
+import {
+  createServerSupabaseClient,
+  createStaticSupabaseClient,
+} from "@/lib/supabase/server-client";
 import { formatDate } from "@/lib/utils";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import {
-  getPostSEODataServer,
+  getStaticPostSEOData,
   generateCanonicalUrl,
   generateBreadcrumbSchema,
-} from "@/lib/seo";
+} from "@/lib/seo-static";
 import JsonLd from "@/components/seo/JsonLd";
 
 interface PostPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
+}
+
+// Generate static params for all published posts
+export async function generateStaticParams() {
+  const supabase = createStaticSupabaseClient();
+
+  const { data: posts, error } = await supabase
+    .from("insights_posts")
+    .select("slug")
+    .eq("is_published", true);
+
+  if (error || !posts) {
+    console.error("Error fetching posts for generateStaticParams:", error);
+    return [];
+  }
+
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
 }
 
 // Generate metadata for SEO
 export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
-  const seoData = await getPostSEODataServer(params.slug);
+  const { slug } = await params;
+  const seoData = await getStaticPostSEOData(slug);
 
   if (!seoData) {
     return {
@@ -31,7 +54,7 @@ export async function generateMetadata({
     };
   }
 
-  const canonicalUrl = generateCanonicalUrl(`/ai-insights/${params.slug}`);
+  const canonicalUrl = generateCanonicalUrl(`/ai-insights/${slug}`);
 
   return {
     title: seoData.meta_title,
@@ -58,13 +81,20 @@ export async function generateMetadata({
               alt: seoData.meta_title,
             },
           ]
-        : undefined,
+        : [
+            {
+              url: "/og-image.png",
+              width: 1200,
+              height: 630,
+              alt: seoData.meta_title,
+            },
+          ],
     },
     twitter: {
       card: "summary_large_image",
       title: seoData.meta_title,
       description: seoData.meta_description,
-      images: seoData.og_image_url ? [seoData.og_image_url] : undefined,
+      images: seoData.og_image_url ? [seoData.og_image_url] : ["/og-image.png"],
     },
     robots: seoData.robots_directive || "index,follow",
   };
@@ -78,14 +108,14 @@ async function getPost(slug: string) {
     .select(
       `
       *,
-      categories:insights_post_categories(
+      categories:insights_posts_categories(
         category:insights_categories(*)
       ),
       author:insights_authors(*)
     `
     )
     .eq("slug", slug)
-    .eq("status", "published")
+    .eq("is_published", true)
     .single();
 
   if (error || !post) {
@@ -99,8 +129,9 @@ async function getPost(slug: string) {
 }
 
 export default async function PostPage({ params }: PostPageProps) {
-  const post = await getPost(params.slug);
-  const seoData = await getPostSEODataServer(params.slug);
+  const { slug } = await params;
+  const post = await getPost(slug);
+  const seoData = await getStaticPostSEOData(slug);
 
   if (!post) {
     notFound();
@@ -166,17 +197,17 @@ export default async function PostPage({ params }: PostPageProps) {
                 alt={post.title}
                 width={800}
                 height={400}
-                className="w-full h-auto object-cover"
+                style={{
+                  width: "100%",
+                  height: "auto",
+                }}
+                className="object-cover"
                 priority
               />
             </div>
           )}
 
-          <MarkdownRenderer
-            content={post.content}
-            contentHtml={post.content_html}
-            useHtml={!!post.content_html}
-          />
+          <MarkdownRenderer content={post.content} />
 
           {post.author && (
             <div className="border-t border-border pt-8 mt-12">

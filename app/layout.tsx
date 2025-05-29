@@ -119,7 +119,7 @@ export const metadata: Metadata = {
     title: "Lumman AI",
   },
   verification: {
-    google: process.env.GOOGLE_SITE_VERIFICATION,
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
   },
 };
 
@@ -128,7 +128,6 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false,
 };
 
 // Organization Schema.org data
@@ -139,7 +138,7 @@ const organizationSchema = {
   description:
     "AI R&D Lab helping companies automate operations and evolve using AI",
   url: "https://lumman.ai",
-  logo: "https://lumman.ai/logo.png",
+  logo: "https://lumman.ai/lumman_black.svg",
   sameAs: [
     "https://linkedin.com/company/lumman-ai",
     "https://twitter.com/lumman_ai",
@@ -151,7 +150,8 @@ const organizationSchema = {
   },
   address: {
     "@type": "PostalAddress",
-    addressCountry: "US",
+    addressCountry: "GB",
+    addressLocality: "London",
   },
 };
 

@@ -11,6 +11,7 @@ import { useUserData, useChats } from "@/hooks/use-data-fetching";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
+import Image from "next/image";
 
 interface SidebarNavigationProps {
   isOpen: boolean;
@@ -118,12 +119,18 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
       <div className="px-6 h-16 flex items-center">
         {logoSrc ? (
           <Link href="/" onClick={onClose}>
-            <img
-              src={logoSrc}
-              alt="Lumman.ai"
-              width={100}
-              className="h-auto transition-opacity duration-300 ease-in-out cursor-pointer hover:opacity-80"
-            />
+            <div className="relative w-[100px] h-[24px]">
+              <Image
+                src={logoSrc}
+                alt="Lumman.ai"
+                fill
+                sizes="100px"
+                style={{
+                  objectFit: "contain",
+                }}
+                className="transition-opacity duration-300 ease-in-out cursor-pointer hover:opacity-80"
+              />
+            </div>
           </Link>
         ) : (
           <div className="w-[100px] h-[18.85px]" />

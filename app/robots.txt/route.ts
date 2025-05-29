@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // Get robots.txt from Supabase Edge Function
+    // Call Supabase Edge Function directly
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const response = await fetch(
       `${supabaseUrl}/functions/v1/generate-robots`,
@@ -14,7 +14,7 @@ export async function GET() {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to fetch robots.txt");
+      throw new Error(`Edge Function failed: ${response.status}`);
     }
 
     const robotsContent = await response.text();
@@ -26,9 +26,9 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Error generating robots.txt:", error);
+    console.error("Error calling Edge Function for robots.txt:", error);
 
-    // Fallback robots.txt
+    // Improved fallback robots.txt (fixed % issue)
     const fallbackRobots = `User-agent: *
 Allow: /
 Disallow: /dashboard/

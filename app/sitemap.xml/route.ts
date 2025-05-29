@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // Get sitemap from Supabase Edge Function
+    // Call Supabase Edge Function directly
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const response = await fetch(
       `${supabaseUrl}/functions/v1/generate-sitemap`,
@@ -14,7 +14,7 @@ export async function GET() {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to fetch sitemap");
+      throw new Error(`Edge Function failed: ${response.status}`);
     }
 
     const sitemapContent = await response.text();
@@ -26,26 +26,27 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Error generating sitemap:", error);
+    console.error("Error calling Edge Function for sitemap:", error);
 
-    // Fallback sitemap
+    // Improved fallback sitemap with current date
+    const currentDate = new Date().toISOString().split("T")[0];
     const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://lumman.ai/</loc>
-    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://lumman.ai/ai-insights</loc>
-    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <lastmod>${currentDate}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://lumman.ai/legal</loc>
-    <lastmod>${new Date().toISOString().split("T")[0]}</lastmod>
+    <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
