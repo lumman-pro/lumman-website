@@ -8,161 +8,183 @@ import { ReactQueryProvider } from "@/providers/query-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/next";
 import JsonLd from "@/components/seo/JsonLd";
+import { getStaticGlobalSEOSettings } from "@/lib/seo-static";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Lumman AI - AI R&D Lab for Business Automation",
-    template: "%s | Lumman AI",
-  },
-  description:
-    "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
-  generator: "Next.js",
-  applicationName: "Lumman AI",
-  keywords: [
-    "AI automation",
-    "artificial intelligence",
-    "business automation",
-    "AI R&D lab",
-    "AI consulting",
-    "machine learning",
-    "AI strategy",
-    "AI agents",
-    "process automation",
-    "digital transformation",
-  ],
-  authors: [{ name: "Lumman AI", url: "https://lumman.ai" }],
-  creator: "Lumman AI",
-  publisher: "Lumman AI",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL(
-    process.env.NODE_ENV === "production"
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getStaticGlobalSEOSettings();
+
+  const siteName = settings.site_name || "Lumman AI";
+  const siteDescription =
+    settings.site_description ||
+    "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.";
+  const siteUrl =
+    settings.site_url ||
+    (process.env.NODE_ENV === "production"
       ? "https://lumman.ai"
-      : "http://localhost:3000"
-  ),
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    title: "Lumman AI - AI R&D Lab for Business Automation",
-    description:
-      "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
-    url:
-      process.env.NODE_ENV === "production"
-        ? "https://lumman.ai"
-        : "http://localhost:3000",
-    siteName: "Lumman AI",
-    locale: "en_US",
-    type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Lumman AI - AI R&D Lab for Business Automation",
-      },
+      : "http://localhost:3000");
+  const defaultOgImage = settings.default_og_image || "/og-image.png";
+
+  return {
+    title: {
+      default: siteName,
+      template: `%s | ${siteName}`,
+    },
+    description: siteDescription,
+    generator: "Next.js",
+    applicationName: siteName,
+    keywords: [
+      "AI automation",
+      "artificial intelligence",
+      "business automation",
+      "AI R&D lab",
+      "AI consulting",
+      "machine learning",
+      "AI strategy",
+      "AI agents",
+      "process automation",
+      "digital transformation",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Lumman AI - AI R&D Lab for Business Automation",
-    description:
-      "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
-    images: ["/og-image.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: siteName, url: siteUrl }],
+    creator: siteName,
+    publisher: siteName,
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    metadataBase: new URL(siteUrl),
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      title: siteName,
+      description: siteDescription,
+      url: siteUrl,
+      siteName: siteName,
+      locale: "en_US",
+      type: "website",
+      images: [
+        {
+          url: defaultOgImage,
+          width: 1200,
+          height: 630,
+          alt: siteName,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: siteName,
+      description: siteDescription,
+      images: [defaultOgImage],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "32x32" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-      {
-        url: "/apple-touch-icon-152x152.png",
-        sizes: "152x152",
-        type: "image/png",
-      },
-    ],
-    other: [
-      {
-        rel: "apple-touch-icon-precomposed",
-        url: "/apple-touch-icon.png",
-        sizes: "180x180",
-      },
-      {
-        rel: "mask-icon",
-        url: "/favicon.svg",
-        color: "#000000",
-      },
-    ],
-  },
-  manifest: "/site.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Lumman AI",
-  },
-  verification: {
-    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
-  },
-};
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "32x32" },
+        { url: "/favicon.svg", type: "image/svg+xml" },
+      ],
+      apple: [
+        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+        {
+          url: "/apple-touch-icon-152x152.png",
+          sizes: "152x152",
+          type: "image/png",
+        },
+      ],
+      other: [
+        {
+          rel: "apple-touch-icon-precomposed",
+          url: "/apple-touch-icon.png",
+          sizes: "180x180",
+        },
+        {
+          rel: "mask-icon",
+          url: "/favicon.svg",
+          color: "#000000",
+        },
+      ],
+    },
+    manifest: "/site.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: siteName,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
-// Organization Schema.org data
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "Lumman AI",
-  description:
-    "AI R&D Lab helping companies automate operations and evolve using AI",
-  url: "https://lumman.ai",
-  logo: "https://lumman.ai/lumman_black.svg",
-  sameAs: [
-    "https://linkedin.com/company/lumman-ai",
-    "https://twitter.com/lumman_ai",
-  ],
-  contactPoint: {
-    "@type": "ContactPoint",
-    contactType: "customer service",
-    email: "hello@lumman.ai",
-  },
-  address: {
-    "@type": "PostalAddress",
-    addressCountry: "GB",
-    addressLocality: "London",
-  },
-};
+// Get organization schema from settings
+async function getOrganizationSchema() {
+  const settings = await getStaticGlobalSEOSettings();
+  return (
+    settings.organization_schema || {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Lumman AI",
+      description:
+        "AI R&D Lab helping companies automate operations and evolve using AI",
+      url: "https://lumman.ai",
+      logo: "https://lumman.ai/lumman_black.svg",
+      sameAs: [
+        "https://linkedin.com/company/lumman-ai",
+        "https://twitter.com/lumman_ai",
+      ],
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        email: "hello@lumman.ai",
+      },
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "GB",
+        addressLocality: "London",
+      },
+    }
+  );
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationSchema = await getOrganizationSchema();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Preconnect to external resources */}
+        <link
+          rel="preconnect"
+          href="https://xkhtcpwgziilmjdaymfu.supabase.co"
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link rel="preconnect" href="https://vercel.live" />
+
         <JsonLd data={organizationSchema} />
       </head>
       <body className={inter.className}>
