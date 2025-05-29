@@ -56,9 +56,19 @@ export async function generateMetadata({
 
   const canonicalUrl = generateCanonicalUrl(`/ai-insights/${slug}`);
 
+  // Get post data for keywords
+  const supabase = createStaticSupabaseClient();
+  const { data: post } = await supabase
+    .from("insights_posts")
+    .select("seo_keywords")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .single();
+
   return {
     title: seoData.meta_title,
     description: seoData.meta_description,
+    keywords: post?.seo_keywords || undefined,
     alternates: {
       canonical: canonicalUrl,
     },

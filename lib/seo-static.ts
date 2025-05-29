@@ -115,7 +115,23 @@ export async function getStaticGlobalSEOSettings() {
 
     const settings: Record<string, any> = {};
     data?.forEach((setting) => {
-      settings[setting.key] = setting.value;
+      // Handle both string and JSON values
+      let value = setting.value;
+      if (typeof value === "string") {
+        try {
+          // Try to parse as JSON if it looks like JSON
+          if (
+            value.startsWith("{") ||
+            value.startsWith("[") ||
+            value.startsWith('"')
+          ) {
+            value = JSON.parse(value);
+          }
+        } catch {
+          // If parsing fails, keep as string
+        }
+      }
+      settings[setting.key] = value;
     });
 
     return settings;
