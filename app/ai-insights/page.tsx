@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import {
-  getSEODataServer,
+  getStaticSEOData,
   generateCanonicalUrl,
   generateBreadcrumbSchema,
-} from "@/lib/seo";
+} from "@/lib/seo-static";
 import JsonLd from "@/components/seo/JsonLd";
 import InsightsPageClient from "./InsightsPageClient";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seoData = await getSEODataServer("/ai-insights");
+  const seoData = await getStaticSEOData("/ai-insights");
 
   const canonicalUrl = generateCanonicalUrl("/ai-insights");
 
@@ -40,7 +40,14 @@ export async function generateMetadata(): Promise<Metadata> {
               alt: "AI Insights - Expert Analysis on AI Automation & Strategy",
             },
           ]
-        : undefined,
+        : [
+            {
+              url: "/og-image.png",
+              width: 1200,
+              height: 630,
+              alt: "AI Insights - Expert Analysis on AI Automation & Strategy",
+            },
+          ],
     },
     twitter: {
       card: "summary_large_image",
@@ -50,7 +57,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description:
         seoData?.meta_description ||
         "Discover expert insights on AI automation, business transformation, and AI strategy.",
-      images: seoData?.og_image_url ? [seoData.og_image_url] : undefined,
+      images: seoData?.og_image_url
+        ? [seoData.og_image_url]
+        : ["/og-image.png"],
     },
     robots: seoData?.robots_directive || "index,follow",
   };

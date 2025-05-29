@@ -1,31 +1,53 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase/server-client";
+import {
+  createServerSupabaseClient,
+  createStaticSupabaseClient,
+} from "@/lib/supabase/server-client";
 import { PostCard } from "@/components/insights/post-card";
 import { CategoryList } from "@/components/insights/category-list";
 import {
-  getCategorySEODataServer,
+  getStaticCategorySEOData,
   generateCanonicalUrl,
   generateBreadcrumbSchema,
-} from "@/lib/seo";
+} from "@/lib/seo-static";
 import JsonLd from "@/components/seo/JsonLd";
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
   searchParams: {
     page?: string;
   };
 }
 
-const POSTS_PER_PAGE = 9;
+const POSTS_PER_PAGE = 10;
+
+// Generate static params for all categories
+export async function generateStaticParams() {
+  const supabase = createStaticSupabaseClient();
+
+  const { data: categories, error } = await supabase
+    .from("insights_categories")
+    .select("slug");
+
+  if (error || !categories) {
+    console.error("Error fetching categories for generateStaticParams:", error);
+    return [];
+  }
+
+  return categories.map((category) => ({
+    slug: category.slug,
+  }));
+}
 
 // Generate metadata for SEO
 export async function generateMetadata({
   params,
 }: CategoryPageProps): Promise<Metadata> {
-  const seoData = await getCategorySEODataServer(params.slug);
+  const { slug } = await params;
+  const seoData = await getStaticCategorySEOData(slug);
 
   if (!seoData) {
     return {
@@ -34,9 +56,7 @@ export async function generateMetadata({
     };
   }
 
-  const canonicalUrl = generateCanonicalUrl(
-    `/ai-insights/category/${params.slug}`
-  );
+  const canonicalUrl = generateCanonicalUrl(`/ai-insights/category/${slug}`);
 
   return {
     title: seoData.meta_title,
@@ -58,13 +78,20 @@ export async function generateMetadata({
               alt: seoData.meta_title,
             },
           ]
-        : undefined,
+        : [
+            {
+              url: "/og-image.png",
+              width: 1200,
+              height: 630,
+              alt: seoData.meta_title,
+            },
+          ],
     },
     twitter: {
       card: "summary_large_image",
       title: seoData.meta_title,
       description: seoData.meta_description,
-      images: seoData.og_image_url ? [seoData.og_image_url] : undefined,
+      images: seoData.og_image_url ? [seoData.og_image_url] : ["/og-image.png"],
     },
     robots: seoData.robots_directive || "index,follow",
   };
@@ -105,12 +132,29 @@ async function getCategoryPosts(categorySlug: string, page: number = 1) {
   const supabase = await createServerSupabaseClient();
   const offset = (page - 1) * POSTS_PER_PAGE;
 
+  // First, get the category ID
+  const { data: category } = await supabase
+    .from("insights_categories")
+    .select("id")
+    .eq("slug", categorySlug)
+    .single();
+
+  if (!category) {
+    return { posts: [], count: 0 };
+  }
+
   // Get posts count
   const { count } = await supabase
     .from("insights_posts")
     .select("*", { count: "exact", head: true })
-    .eq("status", "published")
-    .eq("categories.slug", categorySlug);
+    .eq("is_published", true)
+    .in(
+      "id",
+      supabase
+        .from("insights_posts_categories")
+        .select("post_id")
+        .eq("category_id", category.id)
+    );
 
   // Get posts
   const { data: posts, error } = await supabase
@@ -118,14 +162,20 @@ async function getCategoryPosts(categorySlug: string, page: number = 1) {
     .select(
       `
       *,
-      categories:insights_post_categories(
+      categories:insights_posts_categories(
         category:insights_categories(*)
       ),
       author:insights_authors(*)
     `
     )
-    .eq("status", "published")
-    .eq("categories.slug", categorySlug)
+    .eq("is_published", true)
+    .in(
+      "id",
+      supabase
+        .from("insights_posts_categories")
+        .select("post_id")
+        .eq("category_id", category.id)
+    )
     .order("published_at", { ascending: false })
     .range(offset, offset + POSTS_PER_PAGE - 1);
 
@@ -149,13 +199,14 @@ export default async function CategoryPage({
   params,
   searchParams,
 }: CategoryPageProps) {
+  const { slug } = await params;
   const currentPage = parseInt(searchParams.page || "1", 10);
 
   const [category, categories, postsData, seoData] = await Promise.all([
-    getCategory(params.slug),
+    getCategory(slug),
     getCategories(),
-    getCategoryPosts(params.slug, currentPage),
-    getCategorySEODataServer(params.slug),
+    getCategoryPosts(slug, currentPage),
+    getStaticCategorySEOData(slug),
   ]);
 
   if (!category) {
@@ -192,7 +243,7 @@ export default async function CategoryPage({
             </p>
           </div>
 
-          <CategoryList categories={categories} currentCategory={params.slug} />
+          <CategoryList categories={categories} currentCategory={slug} />
 
           {postsData.posts.length === 0 ? (
             <p className="text-muted-foreground py-12 text-center">
@@ -212,7 +263,7 @@ export default async function CategoryPage({
                     (page) => (
                       <a
                         key={page}
-                        href={`/ai-insights/category/${params.slug}${
+                        href={`/ai-insights/category/${slug}${
                           page > 1 ? `?page=${page}` : ""
                         }`}
                         className={`px-4 py-2 rounded-md transition-colors ${

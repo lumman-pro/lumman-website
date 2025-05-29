@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr"
+import { createClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 import type { Database } from "./database.types"
 
@@ -51,5 +52,16 @@ export async function createServerSupabaseClient() {
         persistSession: true,
       },
     },
+  )
+}
+
+/**
+ * Creates a simple Supabase client for static generation contexts
+ * where cookies are not available (like generateStaticParams)
+ */
+export function createStaticSupabaseClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
