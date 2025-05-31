@@ -1,5 +1,6 @@
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { createServerSupabaseClient } from "@/lib/supabase/server-client";
+import type { Json } from "@/lib/supabase/database.types";
 
 export interface SEOData {
   meta_title: string;
@@ -11,17 +12,7 @@ export interface SEOData {
 }
 
 export interface PostSEOData extends SEOData {
-  post_data?: {
-    title: string;
-    slug: string;
-    excerpt: string;
-    published_at: string;
-    updated_at?: string;
-    author: {
-      name: string;
-      bio: string;
-    };
-  };
+  post_data?: Json;
 }
 
 // Server-side SEO functions for generateMetadata
@@ -58,14 +49,7 @@ export async function getPostSEODataServer(
       return null;
     }
 
-    const result = data?.[0];
-    if (!result) return null;
-
-    // Cast Json type to proper TypeScript type
-    return {
-      ...result,
-      post_data: result.post_data as PostSEOData["post_data"],
-    };
+    return data?.[0] || null;
   } catch (error) {
     console.error("Error in getPostSEODataServer:", error);
     return null;
@@ -127,14 +111,7 @@ export async function getPostSEOData(
       return null;
     }
 
-    const result = data?.[0];
-    if (!result) return null;
-
-    // Cast Json type to proper TypeScript type
-    return {
-      ...result,
-      post_data: result.post_data as PostSEOData["post_data"],
-    };
+    return data?.[0] || null;
   } catch (error) {
     console.error("Error in getPostSEOData:", error);
     return null;

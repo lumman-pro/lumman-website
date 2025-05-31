@@ -6,27 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import { formatDate, handleSupabaseError } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import type { Chat } from "@/lib/supabase/database.types";
 
 interface ConversationDetailProps {
   conversationId: string | null;
   onDelete: (id: string) => Promise<void>;
 }
 
-interface Conversation {
-  id: string;
-  user_id: string;
-  chat_name: string | null;
-  chat_summary: string | null;
-  chat_transcription: string | null;
-  created_at: string;
-  chat_duration: number | null;
-}
-
 export function ConversationDetail({
   conversationId,
   onDelete,
 }: ConversationDetailProps) {
-  const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [conversation, setConversation] = useState<Chat | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -73,9 +64,7 @@ export function ConversationDetail({
 
       const { data, error } = await supabase
         .from("chats")
-        .select(
-          "id, user_id, chat_name, chat_summary, chat_transcription, created_at, chat_duration"
-        )
+        .select("*")
         .eq("id", id)
         .eq("user_id", userId) // Explicitly filter by user_id for RLS
         .single();
@@ -283,7 +272,9 @@ export function ConversationDetail({
           {conversation.chat_name || "Untitled Chat"}
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          {formatDate(new Date(conversation.created_at))}
+          {conversation.created_at
+            ? formatDate(new Date(conversation.created_at))
+            : "Unknown date"}
         </p>
       </div>
 

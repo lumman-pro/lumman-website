@@ -196,7 +196,9 @@ export function SidebarNavigation({ isOpen, onClose }: SidebarNavigationProps) {
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground mt-1">
-                      {formatDate(new Date(conversation.created_at))}
+                      {conversation.created_at
+                        ? formatDate(new Date(conversation.created_at))
+                        : "Unknown date"}
                     </span>
                   </div>
                 </Button>

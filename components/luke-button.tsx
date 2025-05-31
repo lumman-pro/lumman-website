@@ -135,7 +135,7 @@ export function LukeButton() {
   // Clean up the conversation when component unmounts
   useEffect(() => {
     return () => {
-      if (conversationRef.current && conversationState === "connected") {
+      if (conversationRef.current) {
         try {
           // @ts-ignore - we know this exists
           conversationRef.current.endSession();
@@ -150,7 +150,7 @@ export function LukeButton() {
         mediaStreamRef.current = null;
       }
     };
-  }, [conversationState]);
+  }, []);
 
   // Get button text based on state
   const getButtonText = () => {

@@ -1,5 +1,5 @@
 interface JsonLdProps {
-  data: Record<string, any> | null | undefined;
+  data: Record<string, unknown>;
 }
 
 export default function JsonLd({ data }: JsonLdProps) {

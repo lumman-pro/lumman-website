@@ -6,8 +6,14 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase/client";
+import {
+  useSupabaseRequired,
+  useSupabase,
+  useSupabaseStatus,
+} from "@/providers/supabase-provider";
 import { handleSupabaseError } from "@/lib/utils";
+import { CACHE_TIMES } from "@/lib/constants";
+import { withAuthCheck, isSupabaseReady } from "@/lib/auth-utils";
 import type { UserProfile } from "@/hooks/use-user-profile";
 import type { Post, Category } from "@/lib/insights";
 
@@ -34,11 +40,25 @@ interface FetchInsightsOptions {
   categorySlug?: string | null;
 }
 
+/**
+ * Хук для получения и управления данными пользователя
+ * Автоматически создает профиль пользователя если его не существует
+ *
+ * @param options - Дополнительные опции React Query
+ * @returns Query объект с данными пользователя
+ */
 // User data hook
 export function useUserData(options?: UseQueryOptions<UserProfile | null>) {
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
+
   return useQuery({
     queryKey: ["userData"],
     queryFn: async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         // Get current user
         const {
@@ -93,16 +113,29 @@ export function useUserData(options?: UseQueryOptions<UserProfile | null>) {
         );
       }
     },
+    enabled: isInitialized && !!supabase, // Only run when Supabase is initialized and available
     ...options,
   });
 }
 
+/**
+ * Мутация для обновления профиля пользователя
+ * Автоматически обновляет кэш React Query после успешного обновления
+ *
+ * @returns Mutation объект для обновления профиля
+ */
 // Update user profile mutation
 export function useUpdateUserProfile() {
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
 
   return useMutation({
     mutationFn: async (updates: Partial<UserProfile>) => {
+      if (!isInitialized || !supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         const {
           data: { user },
@@ -143,15 +176,28 @@ export function useUpdateUserProfile() {
   });
 }
 
+/**
+ * Хук для получения списка чатов пользователя с пагинацией
+ * Поддерживает умное кэширование и оптимизацию запросов
+ *
+ * @param options - Опции для пагинации (limit, offset)
+ * @returns Query объект со списком чатов и общим количеством
+ */
 // Chats hooks
 export function useChats(options?: FetchChatsOptions) {
   const limit = options?.limit || 20;
   const offset = options?.offset || 0;
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
 
   return useQuery({
     queryKey: ["chats", limit, offset],
     queryFn: async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         const {
           data: { user },
@@ -185,6 +231,7 @@ export function useChats(options?: FetchChatsOptions) {
         );
       }
     },
+    enabled: isInitialized && !!supabase, // Only run when Supabase is initialized and available
     initialData: () => {
       // Try to get data from cache with larger limit if this is a smaller request
       if (offset === 0) {
@@ -200,17 +247,30 @@ export function useChats(options?: FetchChatsOptions) {
       }
       return undefined;
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: CACHE_TIMES.CHATS,
   });
 }
 
+/**
+ * Хук для получения детальной информации о конкретном чате
+ * Включает проверку прав доступа (только владелец может просматривать)
+ *
+ * @param chatId - ID чата для получения деталей
+ * @returns Query объект с данными чата
+ */
 // Chat details hook
 export function useChatMessages(chatId: string) {
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
 
   return useQuery({
     queryKey: ["chatDetails", chatId],
     queryFn: async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         if (!chatId) {
           return { chat: null };
@@ -236,27 +296,12 @@ export function useChatMessages(chatId: string) {
 
         if (chatError) {
           if (chatError.code === "PGRST116") {
-            throw new Error(
-              "Chat not found or you don't have permission to access it"
-            );
+            throw new Error("Chat not found");
           }
           throw chatError;
         }
 
-        return {
-          chat: chatData as Chat,
-          // For backward compatibility with the UI, we'll create a dummy messages array
-          messages: [
-            {
-              id: "system-message",
-              chat_id: chatId,
-              content:
-                chatData.chat_summary || "No summary available for this chat.",
-              role: "system",
-              created_at: chatData.created_at,
-            },
-          ],
-        };
+        return { chat: chatData as Chat };
       } catch (err) {
         console.error("Error fetching chat details:", err);
         throw new Error(
@@ -268,73 +313,77 @@ export function useChatMessages(chatId: string) {
         );
       }
     },
-    initialData: () => {
-      // Try to get basic chat data from cached chats list
-      const cachedChatsData = queryClient.getQueryData(["chats", 20, 0]) as
-        | { chats: Chat[] }
-        | undefined;
-      if (cachedChatsData && chatId) {
-        const cachedChat = cachedChatsData.chats.find(
-          (chat) => chat.id === chatId
-        );
-        if (cachedChat) {
-          return {
-            chat: cachedChat,
-            messages: [
-              {
-                id: "system-message",
-                chat_id: chatId,
-                content:
-                  cachedChat.chat_summary ||
-                  "No summary available for this chat.",
-                role: "system",
-                created_at: cachedChat.created_at,
-              },
-            ],
-          };
-        }
-      }
-      return undefined;
-    },
-    enabled: !!chatId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!chatId && isInitialized && !!supabase, // Only run when Supabase is initialized, available, and chatId exists
+    staleTime: CACHE_TIMES.CHAT_DETAILS,
   });
 }
 
-// Placeholder для совместимости с интерфейсом
-// Не создает записи в базе данных
+/**
+ * Мутация для создания нового чата
+ * Автоматически инвалидирует кэш списка чатов после создания
+ *
+ * @returns Mutation объект для создания чата
+ */
+// Create chat mutation
 export function useCreateChat() {
-  return {
-    mutateAsync: async () => {
-      console.log(
-        "useCreateChat is now a placeholder and doesn't create database records"
-      );
-      return {
-        id: "placeholder",
-        chat_name: "Placeholder Chat",
-        created_at: new Date().toISOString(),
-        user_id: "placeholder",
-        chat_summary: null,
-        chat_duration: null,
-        chat_transcription: null,
-        status: "draft",
-      } as Chat;
+  const queryClient = useQueryClient();
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
+
+  return useMutation({
+    mutationFn: async ({ chatName }: { chatName: string }) => {
+      return withAuthCheck(supabase, isInitialized, async (user) => {
+        const { data, error } = await supabase!
+          .from("chats")
+          .insert({
+            user_id: user.id,
+            chat_name: chatName,
+            status: "active",
+          })
+          .select("*")
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        return data as Chat;
+      });
     },
-  };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
+  });
 }
 
+/**
+ * Мутация для обновления статуса чата и связанных данных
+ * Поддерживает обновление summary и duration чата
+ *
+ * @returns Mutation объект для обновления чата
+ */
 // Update chat status mutation
 export function useUpdateChatStatus() {
   const queryClient = useQueryClient();
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
 
   return useMutation({
     mutationFn: async ({
       chatId,
       status,
+      summary,
+      duration,
     }: {
       chatId: string;
       status: string;
+      summary?: string;
+      duration?: number;
     }) => {
+      if (!isInitialized || !supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         const {
           data: { user },
@@ -344,9 +393,13 @@ export function useUpdateChatStatus() {
         if (userError) throw userError;
         if (!user) throw new Error("User not authenticated");
 
+        const updateData: any = { status };
+        if (summary !== undefined) updateData.chat_summary = summary;
+        if (duration !== undefined) updateData.chat_duration = duration;
+
         const { data, error } = await supabase
           .from("chats")
-          .update({ status })
+          .update(updateData)
           .eq("id", chatId)
           .eq("user_id", user.id)
           .select("*")
@@ -363,44 +416,36 @@ export function useUpdateChatStatus() {
           handleSupabaseError(
             err,
             "useUpdateChatStatus",
-            "Failed to update chat status"
+            "Failed to update chat"
           )
         );
       }
     },
     onSuccess: (data) => {
-      // Update the chat details cache
-      queryClient.setQueryData(["chatDetails", data.id], (oldData: any) => {
-        if (oldData) {
-          return {
-            ...oldData,
-            chat: data,
-          };
-        }
-        return oldData;
-      });
-
-      // Update the chats list cache
-      queryClient.setQueryData(["chats", 20, 0], (oldData: any) => {
-        if (oldData && oldData.chats) {
-          return {
-            ...oldData,
-            chats: oldData.chats.map((chat: Chat) =>
-              chat.id === data.id ? data : chat
-            ),
-          };
-        }
-        return oldData;
-      });
+      queryClient.setQueryData(["chatDetails", data.id], { chat: data });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
     },
   });
 }
 
+/**
+ * Хук для получения всех категорий Insights
+ * Используется для навигации и фильтрации статей
+ *
+ * @returns Query объект со списком категорий
+ */
 // Insights hooks
 export function useCategories() {
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
+
   return useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         const { data, error } = await supabase
           .from("insights_categories")
@@ -419,17 +464,34 @@ export function useCategories() {
         );
       }
     },
+    enabled: isInitialized && !!supabase, // Only run when Supabase is initialized and available
   });
 }
 
+/**
+ * Комплексный хук для получения статей блога с расширенной функциональностью:
+ * - Поддержка пагинации
+ * - Фильтрация по категориям
+ * - Автоматическое получение связанных категорий для каждой статьи
+ * - Разделение доступа для аутентифицированных и публичных пользователей
+ *
+ * @param options - Опции для пагинации и фильтрации
+ * @returns Query объект с постами, категориями и метаданными
+ */
 export function useInsights(options?: FetchInsightsOptions) {
   const limit = options?.limit || 10;
   const offset = options?.offset || 0;
-  const categorySlug = options?.categorySlug || null;
+  const categorySlug = options?.categorySlug;
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
 
   return useQuery({
     queryKey: ["insights", limit, offset, categorySlug],
     queryFn: async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         // Check if user is authenticated (for admin access to unpublished posts)
         const {
@@ -437,121 +499,141 @@ export function useInsights(options?: FetchInsightsOptions) {
         } = await supabase.auth.getSession();
         const isAuthenticated = !!session?.user;
 
-        // If filtering by category, get the category ID first
-        let categoryId: string | null = null;
+        // If categorySlug is provided, get category first
         if (categorySlug) {
           const { data: category, error: categoryError } = await supabase
             .from("insights_categories")
-            .select("id")
+            .select("id, name, slug")
             .eq("slug", categorySlug)
             .single();
 
           if (categoryError) {
-            console.error("Error fetching category:", categoryError);
-            return { posts: [], count: 0 };
-          }
-
-          categoryId = category?.id || null;
-
-          // If category not found, return empty result
-          if (!categoryId) {
-            return { posts: [], count: 0 };
+            if (categoryError.code === "PGRST116") {
+              return {
+                posts: [],
+                count: 0,
+                category: null,
+              };
+            }
+            throw categoryError;
           }
         }
 
-        // Build the query for posts with authors
+        // Build query
         let query = supabase
           .from("insights_posts")
           .select("*, author:insights_authors(*)", { count: "exact" });
 
-        // Apply published filter based on authentication status
+        // For non-authenticated users, only show published posts
         if (!isAuthenticated) {
           query = query.eq("is_published", true);
         }
 
-        // If filtering by category, use a more efficient approach
-        if (categoryId) {
-          // Get post IDs that belong to the category
+        // Add category filter if provided
+        if (categorySlug) {
+          // Get posts that have this category via the many-to-many relationship
           const { data: postRelations, error: relationsError } = await supabase
             .from("insights_posts_categories")
-            .select("post_id")
-            .eq("category_id", categoryId);
+            .select("post_id, category:insights_categories!inner(slug)")
+            .eq("category.slug", categorySlug);
 
-          if (relationsError) {
-            console.error("Error fetching post relations:", relationsError);
-            return { posts: [], count: 0 };
+          if (relationsError) throw relationsError;
+
+          const postIds = postRelations?.map((rel) => rel.post_id) || [];
+          if (postIds.length === 0) {
+            return {
+              posts: [],
+              count: 0,
+              category: categorySlug
+                ? await supabase
+                    .from("insights_categories")
+                    .select("*")
+                    .eq("slug", categorySlug)
+                    .single()
+                    .then(({ data }) => data)
+                : null,
+            };
           }
 
-          // If no posts in this category, return empty result
-          if (!postRelations || postRelations.length === 0) {
-            return { posts: [], count: 0 };
-          }
-
-          // Filter posts by the IDs we found
-          const postIds = postRelations.map((relation) => relation.post_id);
           query = query.in("id", postIds);
         }
 
-        // Execute the query with pagination
-        const {
-          data: postsWithAuthors,
-          error: postsError,
-          count,
-        } = await query
-          .order("published_at", { ascending: false })
+        const { data, error, count } = await query
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false })
           .range(offset, offset + limit - 1);
 
-        if (postsError) {
-          console.error("Error fetching posts:", postsError);
-          return { posts: [], count: 0 };
+        if (error) {
+          throw error;
         }
 
-        // If no posts, return early
-        if (!postsWithAuthors || postsWithAuthors.length === 0) {
-          return { posts: [], count: 0 };
-        }
+        // Get category data if categorySlug is provided
+        const categoryData = categorySlug
+          ? await supabase
+              .from("insights_categories")
+              .select("*")
+              .eq("slug", categorySlug)
+              .single()
+              .then(({ data }) => data)
+          : null;
 
-        // Get all post IDs
-        const postIds = postsWithAuthors.map((post) => post.id);
-
-        // Fetch categories for all posts in a single query with join
+        // Get all categories for reference
         const { data: categoriesData, error: categoriesError } = await supabase
-          .from("insights_posts_categories")
-          .select("post_id, category:insights_categories(*)")
-          .in("post_id", postIds);
+          .from("insights_categories")
+          .select("*")
+          .order("name");
 
         if (categoriesError) {
-          console.error("Error fetching categories:", categoriesError);
-          // Return posts without categories rather than failing completely
-          return {
-            posts: postsWithAuthors.map((post) => ({
-              ...post,
-              categories: [],
-            })),
-            count: count || 0,
-          };
+          console.warn("Failed to fetch categories:", categoriesError);
         }
 
-        // Group categories by post_id for efficient mapping
-        const categoriesByPostId: Record<string, Category[]> = {};
-        categoriesData?.forEach((item) => {
-          if (!categoriesByPostId[item.post_id]) {
-            categoriesByPostId[item.post_id] = [];
-          }
-          if (item.category) {
-            categoriesByPostId[item.post_id].push(item.category);
-          }
-        });
+        const posts = data as Post[];
 
-        // Map categories to posts
-        const postsWithCategories = postsWithAuthors.map((post) => ({
-          ...post,
-          categories: categoriesByPostId[post.id] || [],
-        }));
+        // Add categories to posts
+        const postsWithCategories = await Promise.all(
+          posts.map(async (post) => {
+            try {
+              const { data: postCategories, error: categoriesError } =
+                await supabase
+                  .from("insights_posts_categories")
+                  .select("category:insights_categories(*)")
+                  .eq("post_id", post.id);
+
+              if (categoriesError) {
+                console.warn(
+                  `Failed to fetch categories for post ${post.id}:`,
+                  categoriesError
+                );
+                return {
+                  ...post,
+                  categories: [],
+                };
+              }
+
+              return {
+                ...post,
+                categories:
+                  postCategories?.map((pc) => pc.category).filter(Boolean) ||
+                  [],
+              };
+            } catch (err) {
+              console.warn(
+                `Error processing categories for post ${post.id}:`,
+                err
+              );
+              return {
+                ...post,
+                categories: [],
+              };
+            }
+          })
+        );
 
         return {
-          posts: postsWithCategories as Post[],
+          posts: postsWithCategories,
           count: count || 0,
+          category: categoryData,
+          allCategories: categoriesData || [],
         };
       } catch (err) {
         console.error("Error fetching insights:", err);
@@ -560,13 +642,30 @@ export function useInsights(options?: FetchInsightsOptions) {
         );
       }
     },
+    enabled: isInitialized && !!supabase, // Only run when Supabase is initialized and available
+    staleTime: CACHE_TIMES.INSIGHTS,
   });
 }
 
+/**
+ * Хук для получения отдельной статьи по slug
+ * Включает автоматическое получение связанных категорий и автора
+ * Поддерживает разные права доступа для опубликованных/неопубликованных статей
+ *
+ * @param slug - URL slug статьи (может быть null)
+ * @returns Query объект с данными статьи или null
+ */
 export function useInsightBySlug(slug: string | null) {
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
+
   return useQuery({
     queryKey: ["insight", slug],
     queryFn: async () => {
+      if (!supabase) {
+        throw new Error("Supabase client not available");
+      }
+
       try {
         if (!slug) {
           return null;
@@ -600,47 +699,30 @@ export function useInsightBySlug(slug: string | null) {
           return null;
         }
 
-        try {
-          // Fetch categories for the post in a single query chain
-          const { data: postCategories, error: categoriesError } =
-            await supabase
-              .from("insights_posts_categories")
-              .select("category:insights_categories(*)")
-              .eq("post_id", post.id);
+        // Get post categories
+        const { data: postCategories, error: categoriesError } = await supabase
+          .from("insights_posts_categories")
+          .select("category:insights_categories(*)")
+          .eq("post_id", post.id);
 
-          if (categoriesError) {
-            console.error("Error fetching post categories:", categoriesError);
-            // Return post without categories rather than failing completely
-            return {
-              ...post,
-              categories: [],
-            };
-          }
-
-          // Extract categories from the joined query
-          const categories =
-            (postCategories
-              ?.map((item) => item.category)
-              .filter(Boolean) as Category[]) || [];
-
-          return {
-            ...post,
-            categories,
-          } as Post;
-        } catch (err) {
-          console.error("Error processing post categories:", err);
-          return {
-            ...post,
-            categories: [],
-          } as Post;
+        if (categoriesError) {
+          console.warn(
+            `Failed to fetch categories for post ${post.id}:`,
+            categoriesError
+          );
         }
+
+        return {
+          ...post,
+          categories:
+            postCategories?.map((pc) => pc.category).filter(Boolean) || [],
+        } as Post;
       } catch (err) {
         console.error("Error fetching insight by slug:", err);
-        throw new Error(
-          handleSupabaseError(err, "useInsightBySlug", "Failed to load insight")
-        );
+        return null;
       }
     },
-    enabled: !!slug,
+    enabled: !!slug && isInitialized && !!supabase, // Only run when Supabase is initialized, available, and slug exists
+    staleTime: CACHE_TIMES.INSIGHT_BY_SLUG,
   });
 }

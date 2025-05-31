@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/next";
 import JsonLd from "@/components/seo/JsonLd";
 import { getStaticGlobalSEOSettings } from "@/lib/seo-static";
+import ErrorBoundary from "@/components/error-boundary";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -188,20 +189,22 @@ export default async function RootLayout({
         <JsonLd data={organizationSchema} />
       </head>
       <body className={inter.className}>
-        <SupabaseProvider>
-          <ReactQueryProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              {children}
-              <Toaster />
-              <Analytics />
-            </ThemeProvider>
-          </ReactQueryProvider>
-        </SupabaseProvider>
+        <ErrorBoundary>
+          <SupabaseProvider>
+            <ReactQueryProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+                <Toaster />
+                <Analytics />
+              </ThemeProvider>
+            </ReactQueryProvider>
+          </SupabaseProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

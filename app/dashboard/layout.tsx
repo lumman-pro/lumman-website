@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { useSupabase, useSupabaseStatus } from "@/providers/supabase-provider";
 import { AccountDropdown } from "@/components/account/account-dropdown";
 import { DeleteAccountModal } from "@/components/account/delete-account-modal";
 
@@ -22,8 +22,9 @@ export default function DashboardLayout({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { isInitialized } = useSupabaseStatus();
 
-    // Check if current page is a chat page
+  // Check if current page is a chat page
   const isChatPage = pathname?.includes("/dashboard/chat/");
   // Check if current page is account page
   const isAccountPage = pathname === "/dashboard/account";
@@ -33,15 +34,26 @@ export default function DashboardLayout({
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // ✅ ИСПРАВЛЕНО: Всегда вызываем хук, проверяем инициализацию внутри
+  const supabase = useSupabase();
+
   // Check authentication session
   useEffect(() => {
+    // Only check auth when Supabase is initialized and available
+    if (!isInitialized || !supabase) return;
+
     const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          router.replace("/");
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
         router.replace("/");
-        return;
       }
     };
 
@@ -57,7 +69,7 @@ export default function DashboardLayout({
     checkSession();
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, supabase, isInitialized]);
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
@@ -95,8 +107,18 @@ export default function DashboardLayout({
     };
   }, [isSidebarOpen]);
 
-  if (!isMounted) {
-    return null; // Prevent hydration mismatch
+  if (!isMounted || !isInitialized) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background transition-colors duration-300 ease-in-out">
+        <div className="flex flex-1 relative">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-muted-foreground">
+              {!isMounted ? "Loading..." : "Initializing..."}
+            </div>
+          </div>
+        </div>
+      </div>
+    ); // Prevent hydration mismatch and show loading while initializing
   }
 
   return (

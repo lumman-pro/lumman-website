@@ -71,6 +71,14 @@ export async function getPosts({
       query = query.eq("is_published", true);
     }
 
+    // Add ordering with fallback for null published_at
+    // First order by published_at (nulls last), then by created_at as fallback
+    query = query.order("published_at", {
+      ascending: false,
+      nullsFirst: false,
+    });
+    query = query.order("created_at", { ascending: false });
+
     // If filtering by category, use a more efficient approach
     if (categoryId) {
       // Get post IDs that belong to the category
@@ -105,9 +113,7 @@ export async function getPosts({
       data: postsWithAuthors,
       error: postsError,
       count,
-    } = await query
-      .order("published_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+    } = await query.range(offset, offset + limit - 1);
 
     if (postsError) {
       console.error("Error fetching posts:", postsError);

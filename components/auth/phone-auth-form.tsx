@@ -16,10 +16,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Phone, Shield, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
-import { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabase } from "@/providers/supabase-provider";
 
 // Clean phone number - remove all non-digit characters
 const cleanPhoneNumber = (phoneNumber: string): string => {
