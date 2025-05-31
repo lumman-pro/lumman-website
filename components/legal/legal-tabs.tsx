@@ -1,75 +1,122 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { LegalMarkdownRenderer } from "@/components/legal/legal-markdown-renderer"
-import { Loader2 } from "lucide-react"
-
-type TabInfo = {
-  id: string
-  label: string
-  file: string
-}
-
-const legalTabs: TabInfo[] = [
-  { id: "privacy", label: "Privacy Policy", file: "privacy.md" },
-  { id: "terms", label: "Terms of Use", file: "terms.md" },
-  { id: "refund", label: "Refund Policy", file: "refund.md" },
-  { id: "business", label: "Business Info", file: "business-info.md" },
-  { id: "other", label: "Other", file: "other.md" },
-]
+import { useState, useEffect } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LegalMarkdownRenderer } from "@/components/legal/legal-markdown-renderer";
+import { Loader2 } from "lucide-react";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import type { Legal } from "@/lib/supabase/database.types";
 
 export function LegalTabs() {
-  const [activeTab, setActiveTab] = useState<string>("privacy")
-  const [content, setContent] = useState<string>("")
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<string>("privacy");
+  const [documents, setDocuments] = useState<Legal[]>([]);
+  const [content, setContent] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
+  // Проверяем, что мы на клиенте
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Загружаем список документов при монтировании компонента
+  useEffect(() => {
+    if (!isClient) return;
+
+    const fetchDocuments = async () => {
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data, error } = await supabase
+          .from("legal")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order");
+
+        if (error) throw error;
+
+        setDocuments(data || []);
+
+        // Устанавливаем первый документ как активный по умолчанию
+        if (data && data.length > 0) {
+          setActiveTab(data[0].slug);
+        }
+      } catch (err) {
+        console.error("Failed to load legal documents:", err);
+        setError("Failed to load legal documents");
+      }
+    };
+
+    fetchDocuments();
+  }, [isClient]);
+
+  // Загружаем контент активной вкладки
+  useEffect(() => {
+    if (!isClient || !activeTab || documents.length === 0) return;
+
     const fetchContent = async () => {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       try {
-        const tab = legalTabs.find((tab) => tab.id === activeTab)
-        if (!tab) return
-
-        const response = await fetch(`/legal/${tab.file}`)
-
-        if (!response.ok) {
-          throw new Error(`Failed to load ${tab.label}`)
+        const document = documents.find((doc) => doc.slug === activeTab);
+        if (document) {
+          setContent(document.content);
+        } else {
+          setError("Document not found");
         }
-
-        const text = await response.text()
-        setContent(text)
       } catch (err) {
-        console.error("Failed to load legal content:", err)
-        setError(err instanceof Error ? err.message : "Failed to load content")
-        setContent("")
+        console.error("Failed to load legal content:", err);
+        setError("Failed to load content");
+        setContent("");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchContent()
-  }, [activeTab])
+    fetchContent();
+  }, [isClient, activeTab, documents]);
+
+  // Показываем загрузку во время SSR или пока не загрузились документы
+  if (!isClient || (documents.length === 0 && !error)) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error && documents.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[400px] text-center">
+        <p className="text-destructive">{error}</p>
+        <p className="text-muted-foreground mt-2">
+          Legal documents may be unavailable.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+    <Tabs
+      defaultValue={activeTab}
+      onValueChange={setActiveTab}
+      className="w-full"
+    >
       <TabsList className="mb-8 w-full flex overflow-x-auto">
-        {legalTabs.map((tab) => (
+        {documents.map((doc) => (
           <TabsTrigger
-            key={tab.id}
-            value={tab.id}
+            key={doc.slug}
+            value={doc.slug}
             className="text-sm font-medium transition-colors duration-300 ease-in-out flex-1"
           >
-            {tab.label}
+            {doc.title}
           </TabsTrigger>
         ))}
       </TabsList>
 
-      {legalTabs.map((tab) => (
-        <TabsContent key={tab.id} value={tab.id} className="mt-0">
+      {documents.map((doc) => (
+        <TabsContent key={doc.slug} value={doc.slug} className="mt-0">
           <div className="border rounded-md p-6 min-h-[400px]">
             {isLoading ? (
               <div className="flex items-center justify-center h-[400px]">
@@ -78,7 +125,9 @@ export function LegalTabs() {
             ) : error ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center">
                 <p className="text-destructive">{error}</p>
-                <p className="text-muted-foreground mt-2">Legal document may be missing or unavailable.</p>
+                <p className="text-muted-foreground mt-2">
+                  Legal document may be missing or unavailable.
+                </p>
               </div>
             ) : (
               <div className="overflow-auto max-h-[70vh]">
@@ -89,5 +138,5 @@ export function LegalTabs() {
         </TabsContent>
       ))}
     </Tabs>
-  )
+  );
 }

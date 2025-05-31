@@ -12,7 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
-import { Menu, Send, Loader2 } from "lucide-react";
+import { Menu, UserPlus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ChatDropdown } from "@/components/chat/chat-dropdown";
 import { useState } from "react";
@@ -154,6 +154,19 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* Information text before waitlist button */}
+        <div className="flex justify-center mb-6">
+          <div className="text-center text-sm text-muted-foreground max-w-2xl px-4">
+            <p>
+              We're in an early phase and navigating some growing pains,
+              especially around capacity. As soon as we're able to take on your
+              inquiry, we'll get back to you with next steps and timing. Just
+              hit Join the Waitlist to save your spot — or feel free to start a
+              new chat anytime and tell us more about your goals.
+            </p>
+          </div>
+        </div>
+
         {/* Send for Evaluation button */}
         <div className="flex flex-col items-center mt-6">
           <Button
@@ -172,13 +185,13 @@ export default function ChatPage() {
               </>
             ) : chatData?.chat?.status === "evaluation_requested" ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Evaluating
+                <UserPlus className="mr-2 h-4 w-4" />
+                You're on the list!
               </>
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
-                Send for Evaluation
+                <UserPlus className="mr-2 h-4 w-4" />
+                Join the Waitlist
               </>
             )}
           </Button>
@@ -186,12 +199,7 @@ export default function ChatPage() {
           {/* Evaluation status message */}
           {chatData?.chat?.status === "evaluation_requested" && (
             <div className="mt-4 text-center text-sm text-muted-foreground max-w-md">
-              <p className="font-medium">Thanks — we've got it!</p>
-              <p className="mt-1">Evaluation usually takes up to 24 hours.</p>
-              <p className="mt-1">
-                As soon as we've got a rough scope ready, we'll send it your way
-                by email.
-              </p>
+              <p>We'll be in touch as soon as a spot opens up.</p>
             </div>
           )}
         </div>

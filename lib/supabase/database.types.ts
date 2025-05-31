@@ -263,6 +263,39 @@ export type Database = {
           }
         ];
       };
+      legal: {
+        Row: {
+          content: string;
+          created_at: string | null;
+          id: string;
+          is_active: boolean | null;
+          slug: string;
+          sort_order: number | null;
+          title: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          content: string;
+          created_at?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          slug: string;
+          sort_order?: number | null;
+          title: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          content?: string;
+          created_at?: string | null;
+          id?: string;
+          is_active?: boolean | null;
+          slug?: string;
+          sort_order?: number | null;
+          title?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       pending_chats: {
         Row: {
           agent_id: string | null;
@@ -740,3 +773,8 @@ export type PendingChat = Database["public"]["Tables"]["pending_chats"]["Row"];
 export type Topic = Database["public"]["Tables"]["topics"]["Row"];
 export type SEOSettings = Database["public"]["Tables"]["seo_settings"]["Row"];
 export type SEOPages = Database["public"]["Tables"]["seo_pages"]["Row"];
+
+// Legal types
+export type Legal = Database["public"]["Tables"]["legal"]["Row"];
+export type LegalInsert = Database["public"]["Tables"]["legal"]["Insert"];
+export type LegalUpdate = Database["public"]["Tables"]["legal"]["Update"];
