@@ -42,7 +42,7 @@ Allow: /favicon.ico
 Allow: /robots.txt
 Allow: /sitemap.xml
 
-Sitemap: https://lumman.ai/sitemap.xml`;
+Sitemap: https://www.lumman.ai/sitemap.xml`;
 
     return new NextResponse(fallbackRobots, {
       headers: {

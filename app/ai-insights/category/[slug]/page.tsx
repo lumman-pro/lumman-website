@@ -17,9 +17,9 @@ interface CategoryPageProps {
   params: Promise<{
     slug: string;
   }>;
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
-  };
+  }>;
 }
 
 const POSTS_PER_PAGE = 10;
@@ -143,18 +143,24 @@ async function getCategoryPosts(categorySlug: string, page: number = 1) {
     return { posts: [], count: 0 };
   }
 
+  // Get post IDs for this category
+  const { data: postIds } = await supabase
+    .from("insights_posts_categories")
+    .select("post_id")
+    .eq("category_id", category.id);
+
+  if (!postIds || postIds.length === 0) {
+    return { posts: [], count: 0 };
+  }
+
+  const postIdArray = postIds.map((item) => item.post_id);
+
   // Get posts count
   const { count } = await supabase
     .from("insights_posts")
     .select("*", { count: "exact", head: true })
     .eq("is_published", true)
-    .in(
-      "id",
-      supabase
-        .from("insights_posts_categories")
-        .select("post_id")
-        .eq("category_id", category.id)
-    );
+    .in("id", postIdArray);
 
   // Get posts
   const { data: posts, error } = await supabase
@@ -169,13 +175,7 @@ async function getCategoryPosts(categorySlug: string, page: number = 1) {
     `
     )
     .eq("is_published", true)
-    .in(
-      "id",
-      supabase
-        .from("insights_posts_categories")
-        .select("post_id")
-        .eq("category_id", category.id)
-    )
+    .in("id", postIdArray)
     .order("published_at", { ascending: false })
     .range(offset, offset + POSTS_PER_PAGE - 1);
 
@@ -200,7 +200,8 @@ export default async function CategoryPage({
   searchParams,
 }: CategoryPageProps) {
   const { slug } = await params;
-  const currentPage = parseInt(searchParams.page || "1", 10);
+  const resolvedSearchParams = await searchParams;
+  const currentPage = parseInt(resolvedSearchParams.page || "1", 10);
 
   const [category, categories, postsData, seoData] = await Promise.all([
     getCategory(slug),
@@ -217,11 +218,11 @@ export default async function CategoryPage({
 
   // Generate breadcrumb schema
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: "Home", url: "https://lumman.ai" },
-    { name: "AI Insights", url: "https://lumman.ai/ai-insights" },
+    { name: "Home", url: "https://www.lumman.ai" },
+    { name: "AI Insights", url: "https://www.lumman.ai/ai-insights" },
     {
       name: category.name,
-      url: `https://lumman.ai/ai-insights/category/${category.slug}`,
+      url: `https://www.lumman.ai/ai-insights/category/${category.slug}`,
     },
   ]);
 
