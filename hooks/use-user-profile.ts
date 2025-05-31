@@ -1,21 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-// Add the import for handleSupabaseError
 import { handleSupabaseError } from "@/lib/utils";
+import type { UserProfile as DBUserProfile } from "@/lib/supabase/database.types";
 
-export interface UserProfile {
-  user_id: string;
-  user_name: string | null;
-  user_email: string | null;
-  company_name: string | null;
-  company_url: string | null;
-  user_phone: string | null;
-  created_at: string;
-  updated_at: string | null;
-}
+// Use the database type directly
+export type UserProfile = DBUserProfile;
 
 export function useUserProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -26,11 +18,12 @@ export function useUserProfile() {
   useEffect(() => {
     let isMounted = true;
 
-    // Update the useUserProfile hook's fetchUserProfile method
     const fetchUserProfile = async () => {
       try {
         setIsLoading(true);
         setError(null);
+
+        const supabase = createBrowserSupabaseClient();
 
         // Get current user
         const {
@@ -83,7 +76,7 @@ export function useUserProfile() {
             throw insertError;
           }
 
-          if (isMounted) {
+          if (isMounted && newProfile) {
             setProfile(newProfile);
           }
         }
@@ -112,7 +105,6 @@ export function useUserProfile() {
     };
   }, []);
 
-  // Update the updateProfile method
   const updateProfile = async (updates: {
     user_name?: string | null;
     user_email?: string | null;
@@ -124,6 +116,8 @@ export function useUserProfile() {
       if (!profile) {
         throw new Error("Profile not loaded");
       }
+
+      const supabase = createBrowserSupabaseClient();
 
       const { data, error } = await supabase
         .from("user_profiles")
@@ -138,7 +132,9 @@ export function useUserProfile() {
         throw error;
       }
 
-      setProfile(data);
+      if (data) {
+        setProfile(data);
+      }
       return { success: true, data };
     } catch (err) {
       console.error("Error updating profile:", err);
@@ -164,6 +160,8 @@ export function useUserProfile() {
       try {
         setIsLoading(true);
         setError(null);
+
+        const supabase = createBrowserSupabaseClient();
 
         // Get current user
         const {
@@ -211,18 +209,24 @@ export function useUserProfile() {
             throw insertError;
           }
 
-          setProfile(newProfile);
+          if (newProfile) {
+            setProfile(newProfile);
+          }
         }
 
-        return true;
+        setIsLoading(false);
+        return profile;
       } catch (err) {
         console.error("Error fetching user profile:", err);
         setError(
-          err instanceof Error ? err.message : "Failed to load user profile"
+          handleSupabaseError(
+            err,
+            "fetchUserProfile",
+            "Failed to load user profile"
+          )
         );
-        return false;
-      } finally {
         setIsLoading(false);
+        return null;
       }
     },
     updateProfile,

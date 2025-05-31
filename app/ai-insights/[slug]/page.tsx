@@ -58,7 +58,7 @@ export async function generateMetadata({
 
   // Get post data for keywords
   const supabase = createStaticSupabaseClient();
-  const { data: post } = await supabase
+  const { data: post } = await (supabase as any)
     .from("insights_posts")
     .select("seo_keywords")
     .eq("slug", slug)
@@ -113,17 +113,10 @@ export async function generateMetadata({
 async function getPost(slug: string) {
   const supabase = await createServerSupabaseClient();
 
-  const { data: post, error } = await supabase
+  // Get the main post data - use any to avoid type issues
+  const { data: post, error } = await (supabase as any)
     .from("insights_posts")
-    .select(
-      `
-      *,
-      categories:insights_posts_categories(
-        category:insights_categories(*)
-      ),
-      author:insights_authors(*)
-    `
-    )
+    .select("*, author:insights_authors(*)")
     .eq("slug", slug)
     .eq("is_published", true)
     .single();
@@ -132,9 +125,18 @@ async function getPost(slug: string) {
     return null;
   }
 
+  // Get categories separately
+  const { data: postCategories } = await (supabase as any)
+    .from("insights_posts_categories")
+    .select("category:insights_categories(*)")
+    .eq("post_id", post.id);
+
+  const categories =
+    postCategories?.map((pc: any) => pc.category).filter(Boolean) || [];
+
   return {
     ...post,
-    categories: post.categories?.map((pc: any) => pc.category) || [],
+    categories,
   };
 }
 
@@ -149,9 +151,9 @@ export default async function PostPage({ params }: PostPageProps) {
 
   // Generate breadcrumb schema
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: "Home", url: "https://lumman.ai" },
-    { name: "AI Insights", url: "https://lumman.ai/ai-insights" },
-    { name: post.title, url: `https://lumman.ai/ai-insights/${post.slug}` },
+    { name: "Home", url: "https://www.lumman.ai" },
+    { name: "AI Insights", url: "https://www.lumman.ai/ai-insights" },
+    { name: post.title, url: `https://www.lumman.ai/ai-insights/${post.slug}` },
   ]);
 
   return (

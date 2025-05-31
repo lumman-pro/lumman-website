@@ -3,11 +3,19 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase/client";
-import { Menu, User, X } from "lucide-react";
+import { useSupabase, useSupabaseStatus } from "@/providers/supabase-provider";
+import { Menu, User as UserIcon, X } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
+
+const navigation = [
+  { name: "Home", href: "/" },
+  { name: "AI Insights", href: "/ai-insights" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
+];
 
 export function Header({
   onMenuToggle,
@@ -19,53 +27,53 @@ export function Header({
   const { resolvedTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const supabase = useSupabase(); // Can be null during SSR/initialization
+  const { isInitialized } = useSupabaseStatus();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   useEffect(() => {
     // Mark component as mounted
     setMounted(true);
 
+    // Only check auth when Supabase is initialized and available
+    if (!isInitialized || !supabase) {
+      setIsLoadingAuth(true);
+      return;
+    }
+
     // Check if user is logged in
     const checkUser = async () => {
       try {
-        // Only check auth if supabase is available
-        if (supabase) {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          setUser(session?.user || null);
-        }
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setUser(session?.user || null);
       } catch (error) {
         console.error("Error checking auth session:", error);
         // Continue with null user if there's an error
         setUser(null);
       } finally {
-        setIsLoading(false);
+        setIsLoadingAuth(false);
       }
     };
 
     checkUser();
 
-    // Set up auth state listener only if supabase is available
-    let subscription: { unsubscribe: () => void } | undefined;
-
-    if (supabase) {
-      try {
-        const { data } = supabase.auth.onAuthStateChange((event, session) => {
-          setUser(session?.user || null);
-        });
-        subscription = data.subscription;
-      } catch (error) {
-        console.error("Error setting up auth listener:", error);
-      }
-    }
+    // Set up auth state listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+      setIsLoadingAuth(false);
+    });
 
     return () => {
-      subscription?.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
-  }, []);
+  }, [isInitialized, supabase]);
 
   // Determine which logo to show based on theme
   const logoSrc = mounted
@@ -78,7 +86,7 @@ export function Header({
     return pathname === path || pathname.startsWith(`${path}/`);
   };
 
-  const isAuthenticated = !!user && !isLoading;
+  const isAuthenticated = !!user && !isLoadingAuth;
 
   // Show a placeholder during SSR/before mounting to prevent layout shift
   if (!mounted) {
@@ -157,14 +165,15 @@ export function Header({
             AI Insights
           </Link>
 
-          {!isLoading && (
+          {/* Only show auth button when Supabase is initialized */}
+          {isInitialized && !isLoadingAuth && (
             <Link href={isAuthenticated ? "/dashboard" : "/login"}>
               <Button
                 variant="ghost"
                 size="icon"
                 className="text-sm bg-transparent border-none transition-colors duration-300 ease-in-out flex-shrink-0"
               >
-                <User className="h-4 w-4 text-foreground transition-colors duration-300 ease-in-out" />
+                <UserIcon className="h-4 w-4 text-foreground transition-colors duration-300 ease-in-out" />
                 <span className="sr-only">
                   {isAuthenticated ? "Dashboard" : "Sign in"}
                 </span>

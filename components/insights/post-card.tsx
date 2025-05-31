@@ -5,9 +5,10 @@ import type { Post } from "@/lib/insights";
 
 interface PostCardProps {
   post: Post;
+  priority?: boolean;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, priority = false }: PostCardProps) {
   return (
     <article className="space-y-4 transition-colors duration-300 ease-in-out">
       <Link href={`/ai-insights/${post.slug}`} className="block group">
@@ -18,7 +19,8 @@ export function PostCard({ post }: PostCardProps) {
               alt={post.title}
               width={400}
               height={200}
-              loading="lazy"
+              priority={priority}
+              loading={priority ? undefined : "lazy"}
               style={{
                 width: "100%",
                 height: "auto",

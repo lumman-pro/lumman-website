@@ -239,7 +239,7 @@ export default async function CategoryPage({
               {category.name}
             </h1>
             <p className="text-muted-foreground text-base font-medium transition-colors duration-300 ease-in-out">
-              {category.description ||
+              {category.meta_description ||
                 `AI Insights about ${category.name.toLowerCase()}`}
             </p>
           </div>
@@ -253,8 +253,8 @@ export default async function CategoryPage({
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
-                {postsData.posts.map((post: any) => (
-                  <PostCard key={post.id} post={post} />
+                {postsData.posts.map((post: any, index: number) => (
+                  <PostCard key={post.id} post={post} priority={index === 0} />
                 ))}
               </div>
 

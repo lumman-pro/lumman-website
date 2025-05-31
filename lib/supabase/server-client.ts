@@ -1,7 +1,7 @@
-import { createServerClient } from "@supabase/ssr"
-import { createClient } from "@supabase/supabase-js"
-import { cookies } from "next/headers"
-import type { Database } from "./database.types"
+import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
+import type { Database } from "./database.types";
 
 /**
  * Creates a Supabase client for server environments
@@ -9,40 +9,26 @@ import type { Database } from "./database.types"
  * in a Server Component or Route Handler context
  */
 export async function createServerSupabaseClient() {
-  const cookieStore = await cookies()
+  const cookieStore = await cookies();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(
-          name: string,
-          value: string,
-          options: { path: string; maxAge: number; domain?: string; sameSite?: string; secure?: boolean },
-        ) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
           } catch (error) {
             // This can happen in middleware or other contexts where cookies cannot be set
-            console.error("Error setting cookie in server client", {
-              name,
+            console.error("Error setting cookies in server client", {
               error: error instanceof Error ? error.message : error,
-            })
-          }
-        },
-        remove(name: string, options: { path: string; domain?: string }) {
-          try {
-            cookieStore.set({ name, value: "", ...options, maxAge: 0 })
-          } catch (error) {
-            // This can happen in middleware or other contexts where cookies cannot be modified
-            console.error("Error removing cookie in server client", {
-              name,
-              error: error instanceof Error ? error.message : error,
-            })
+            });
           }
         },
       },
@@ -51,8 +37,8 @@ export async function createServerSupabaseClient() {
         autoRefreshToken: true,
         persistSession: true,
       },
-    },
-  )
+    }
+  );
 }
 
 /**
@@ -63,5 +49,5 @@ export function createStaticSupabaseClient() {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  );
 }

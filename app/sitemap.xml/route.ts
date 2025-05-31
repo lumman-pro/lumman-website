@@ -33,19 +33,19 @@ export async function GET() {
     const fallbackSitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://lumman.ai/</loc>
+    <loc>https://www.lumman.ai/</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://lumman.ai/ai-insights</loc>
+    <loc>https://www.lumman.ai/ai-insights</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://lumman.ai/legal</loc>
+    <loc>https://www.lumman.ai/legal</loc>
     <lastmod>${currentDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>

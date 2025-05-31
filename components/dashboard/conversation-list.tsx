@@ -1,24 +1,19 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
-import { LukeButton } from "@/components/luke-button"
-import { Loader2 } from "lucide-react"
-import { formatDate } from "@/lib/utils"
-import { cn } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
-
-interface Conversation {
-  id: string
-  chat_name: string
-  created_at: string
-  chat_duration: number | null
-}
+import { useState, useEffect } from "react";
+import { useSupabaseStatus } from "@/providers/supabase-provider";
+import { LukeButton } from "@/components/luke-button";
+import { Loader2 } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import type { Chat } from "@/lib/supabase/database.types";
+import { useSupabase } from "@/providers/supabase-provider";
 
 interface ConversationListProps {
-  onSelectConversation: (id: string) => void
-  selectedConversationId: string | null
-  onNewConversation: () => Promise<string>
+  onSelectConversation: (id: string) => void;
+  selectedConversationId: string | null;
+  onNewConversation: () => Promise<string>;
 }
 
 export function ConversationList({
@@ -26,118 +21,153 @@ export function ConversationList({
   selectedConversationId,
   onNewConversation,
 }: ConversationListProps) {
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isCreatingNew, setIsCreatingNew] = useState(false)
-  const { toast } = useToast()
+  const [conversations, setConversations] = useState<Chat[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const { toast } = useToast();
+  const supabase = useSupabase();
+  const { isInitialized } = useSupabaseStatus();
 
   useEffect(() => {
-    fetchConversations()
-  }, [])
+    // Only fetch conversations when Supabase is initialized and available
+    if (isInitialized && supabase) {
+      fetchConversations();
+    }
+  }, [isInitialized, supabase]);
 
   const fetchConversations = async () => {
+    // ✅ ИСПРАВЛЕНО: Проверяем наличие supabase перед использованием
+    if (!supabase) {
+      setError("Supabase client not available");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       // Check if user is authenticated first
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
 
       if (sessionError) {
-        throw new Error("Authentication error: " + sessionError.message)
+        throw new Error("Authentication error: " + sessionError.message);
       }
 
       // If no session exists, set empty conversations and return early
       if (!sessionData.session) {
-        setError("You must be logged in to view conversations")
-        setConversations([])
-        return
+        setError("You must be logged in to view conversations");
+        setConversations([]);
+        return;
       }
 
-      const userId = sessionData.session.user.id
+      const userId = sessionData.session.user.id;
 
       // Only proceed with fetching conversations if user is authenticated
       // RLS will automatically filter to only show the user's own chats,
       // but we're explicitly filtering by user_id for clarity
       const { data, error } = await supabase
         .from("chats")
-        .select("id, chat_name, created_at, chat_duration")
+        .select("*")
         .eq("user_id", userId)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false });
 
       if (error) {
-        throw new Error("Failed to load conversations: " + error.message)
+        throw new Error("Failed to load conversations: " + error.message);
       }
 
-      setConversations(data || [])
+      setConversations(data || []);
 
       // If there are conversations and none is selected, select the first one
       if (data && data.length > 0 && !selectedConversationId) {
-        onSelectConversation(data[0].id)
+        onSelectConversation(data[0].id);
       }
     } catch (err) {
-      console.error("Error fetching conversations:", err)
-      setError(err instanceof Error ? err.message : "Failed to load conversations")
-      setConversations([])
+      console.error("Error fetching conversations:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load conversations"
+      );
+      setConversations([]);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleNewConversation = async () => {
+    // ✅ ИСПРАВЛЕНО: Проверяем наличие supabase перед использованием
+    if (!supabase) {
+      toast({
+        title: "Error",
+        description: "Supabase client not available",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      setIsCreatingNew(true)
+      setIsCreatingNew(true);
 
       // Check authentication first
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
 
       if (sessionError || !sessionData.session) {
         toast({
           title: "Authentication Error",
           description: "You must be logged in to create a conversation",
           variant: "destructive",
-        })
-        return
+        });
+        return;
       }
 
-      const newConversationId = await onNewConversation()
+      const newConversationId = await onNewConversation();
 
       // Refresh the conversation list
-      await fetchConversations()
+      await fetchConversations();
 
       // Select the new conversation
-      onSelectConversation(newConversationId)
+      onSelectConversation(newConversationId);
     } catch (err) {
-      console.error("Error creating new conversation:", err)
+      console.error("Error creating new conversation:", err);
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to create new conversation",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Failed to create new conversation",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsCreatingNew(false)
+      setIsCreatingNew(false);
     }
-  }
+  };
 
-  if (isLoading) {
+  // Show loading state if Supabase is not initialized yet
+  if (!isInitialized || isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="mt-2 text-sm text-muted-foreground">Loading conversations...</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {!isInitialized ? "Initializing..." : "Loading conversations..."}
+        </p>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4">
         <p className="text-destructive">{error}</p>
-        <button onClick={fetchConversations} className="mt-2 text-sm text-muted-foreground hover:text-foreground">
+        <button
+          onClick={fetchConversations}
+          className="mt-2 text-sm text-muted-foreground hover:text-foreground"
+        >
           Try again
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -150,7 +180,9 @@ export function ConversationList({
         {conversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-4 text-center">
             <p className="text-muted-foreground">No conversations yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Start a new conversation with Luke</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Start a new conversation with Luke
+            </p>
           </div>
         ) : (
           <ul className="divide-y">
@@ -160,20 +192,27 @@ export function ConversationList({
                   onClick={() => onSelectConversation(conversation.id)}
                   className={cn(
                     "w-full text-left p-4 hover:bg-muted/50 transition-colors duration-200",
-                    selectedConversationId === conversation.id && "bg-muted",
+                    selectedConversationId === conversation.id && "bg-muted"
                   )}
                 >
-                  <div className="font-medium truncate">{conversation.chat_name || "Untitled Chat"}</div>
+                  <div className="font-medium truncate">
+                    {conversation.chat_name || "Untitled Chat"}
+                  </div>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-xs text-muted-foreground">
-                      {formatDate(new Date(conversation.created_at))}
+                      {conversation.created_at
+                        ? formatDate(new Date(conversation.created_at))
+                        : "Unknown date"}
                     </span>
-                    {conversation.chat_duration && conversation.chat_duration > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        {Math.floor(conversation.chat_duration / 60)}:
-                        {(conversation.chat_duration % 60).toString().padStart(2, "0")}
-                      </span>
-                    )}
+                    {conversation.chat_duration &&
+                      conversation.chat_duration > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {Math.floor(conversation.chat_duration / 60)}:
+                          {(conversation.chat_duration % 60)
+                            .toString()
+                            .padStart(2, "0")}
+                        </span>
+                      )}
                   </div>
                 </button>
               </li>
@@ -200,5 +239,5 @@ export function ConversationList({
         </div>
       </div>
     </div>
-  )
+  );
 }
