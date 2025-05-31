@@ -223,7 +223,7 @@ export function formatMetaDescription(
 export function generateCanonicalUrl(path: string): string {
   const baseUrl =
     process.env.NODE_ENV === "production"
-      ? "https://lumman.ai"
+      ? "https://www.lumman.ai"
       : "http://localhost:3000";
 
   return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;

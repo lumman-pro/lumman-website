@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteUrl =
     settings.site_url ||
     (process.env.NODE_ENV === "production"
-      ? "https://lumman.ai"
+      ? "https://www.lumman.ai"
       : "http://localhost:3000");
   const defaultOgImage = settings.default_og_image || "/og-image.png";
 
@@ -142,8 +142,8 @@ async function getOrganizationSchema() {
       name: "Lumman AI",
       description:
         "AI R&D Lab helping companies automate operations and evolve using AI",
-      url: "https://lumman.ai",
-      logo: "https://lumman.ai/lumman_black.svg",
+      url: "https://www.lumman.ai",
+      logo: "https://www.lumman.ai/lumman_black.svg",
       sameAs: [
         "https://linkedin.com/company/lumman-ai",
         "https://twitter.com/lumman_ai",

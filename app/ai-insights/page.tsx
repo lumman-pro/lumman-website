@@ -68,8 +68,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function InsightsPage() {
   // Generate breadcrumb schema
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: "Home", url: "https://lumman.ai" },
-    { name: "AI Insights", url: "https://lumman.ai/ai-insights" },
+    { name: "Home", url: "https://www.lumman.ai" },
+    { name: "AI Insights", url: "https://www.lumman.ai/ai-insights" },
   ]);
 
   // Blog schema
@@ -79,15 +79,15 @@ export default function InsightsPage() {
     name: "AI Insights",
     description:
       "Expert insights on AI automation, business transformation, and AI strategy",
-    url: "https://lumman.ai/ai-insights",
+    url: "https://www.lumman.ai/ai-insights",
     publisher: {
       "@type": "Organization",
       name: "Lumman AI",
-      url: "https://lumman.ai",
+      url: "https://www.lumman.ai",
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": "https://lumman.ai/ai-insights",
+      "@id": "https://www.lumman.ai/ai-insights",
     },
   };
 

@@ -149,9 +149,9 @@ export default async function PostPage({ params }: PostPageProps) {
 
   // Generate breadcrumb schema
   const breadcrumbSchema = generateBreadcrumbSchema([
-    { name: "Home", url: "https://lumman.ai" },
-    { name: "AI Insights", url: "https://lumman.ai/ai-insights" },
-    { name: post.title, url: `https://lumman.ai/ai-insights/${post.slug}` },
+    { name: "Home", url: "https://www.lumman.ai" },
+    { name: "AI Insights", url: "https://www.lumman.ai/ai-insights" },
+    { name: post.title, url: `https://www.lumman.ai/ai-insights/${post.slug}` },
   ]);
 
   return (

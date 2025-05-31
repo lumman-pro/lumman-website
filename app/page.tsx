@@ -118,10 +118,10 @@ export default function Home() {
     name: "Lumman AI",
     description:
       "AI R&D Lab helping companies automate operations and evolve using AI",
-    url: "https://lumman.ai",
+    url: "https://www.lumman.ai",
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://lumman.ai/ai-insights?search={search_term_string}",
+      target: "https://www.lumman.ai/ai-insights?search={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   };

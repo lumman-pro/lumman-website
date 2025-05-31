@@ -3,7 +3,7 @@
   "name": "Lumman AI",
   "short_name": "Lumman AI",
   "description": "AI R&D Lab helping companies automate operations and evolve using AI. From signal to system. Cognition. In motion.",
-  "start_url": "/",
+  "start_url": "https://www.lumman.ai/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
